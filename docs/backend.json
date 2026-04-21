@@ -4,128 +4,47 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ContaFinanceira",
       "type": "object",
-      "description": "Representa uma conta financeira (bancária ou de cartão de crédito) de onde as transações são importadas. Ajuda a organizar e identificar a origem das transações.",
+      "description": "Representa uma conta financeira (bancária ou de cartão de crédito).",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único para a entidade ContaFinanceira."
-        },
-        "nome": {
-          "type": "string",
-          "description": "Nome da conta financeira (ex: 'Cartão Nubank', 'Conta Corrente Banco do Brasil')."
-        },
-        "tipo": {
-          "type": "string",
-          "description": "Tipo da conta financeira (ex: 'Cartão de Crédito', 'Conta Corrente', 'Poupança')."
-        },
-        "dataCriacao": {
-          "type": "string",
-          "description": "Data e hora em que este registro da conta foi criado na aplicação.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "tipo": { "type": "string" },
+        "dataCriacao": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "nome",
-        "tipo",
-        "dataCriacao"
-      ]
+      "required": ["id", "nome", "tipo", "dataCriacao"]
     },
     "Categoria": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Categoria",
       "type": "object",
-      "description": "Representa uma categoria definida pelo usuário para classificar transações financeiras (ex: 'Moradia', 'Alimentação').",
+      "description": "Representa uma categoria definida pelo usuário.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único para a entidade Categoria."
-        },
-        "nome": {
-          "type": "string",
-          "description": "Nome da categoria (ex: 'Alimentação', 'Transporte', 'Salário')."
-        },
-        "tipoPadrao": {
-          "type": "string",
-          "description": "Tipo padrão associado a esta categoria ('Receita' ou 'Despesa'). Ajuda na atribuição inicial e sugestões de IA."
-        },
-        "dataCriacao": {
-          "type": "string",
-          "description": "Data e hora em que esta categoria foi criada pelo usuário.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "tipoPadrao": { "type": "string" },
+        "dataCriacao": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "nome",
-        "tipoPadrao",
-        "dataCriacao"
-      ]
+      "required": ["id", "nome", "tipoPadrao", "dataCriacao"]
     },
     "Transacao": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Transacao",
       "type": "object",
-      "description": "Representa uma única movimentação financeira, seja receita ou despesa, importada ou manual.",
+      "description": "Representa uma única movimentação financeira.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único para a entidade Transacao."
-        },
-        "descricao": {
-          "type": "string",
-          "description": "Descrição amigável da transação, que pode ser editada pelo usuário."
-        },
-        "descricaoOriginal": {
-          "type": "string",
-          "description": "Descrição original da transação conforme importada do extrato CSV, utilizada para sugestões de categoria por IA."
-        },
-        "valor": {
-          "type": "number",
-          "description": "Valor monetário da transação. Pode ser positivo para receita e negativo para despesa, ou usar o campo 'tipo' para indicar."
-        },
-        "data": {
-          "type": "string",
-          "description": "Data em que a transação ocorreu.",
-          "format": "date"
-        },
-        "tipo": {
-          "type": "string",
-          "description": "Tipo da transação ('Receita' ou 'Despesa')."
-        },
-        "categoriaId": {
-          "type": "string",
-          "description": "Referência à Categoria à qual esta transação pertence. (Relacionamento: Categoria 1:N Transacao)"
-        },
-        "contaFinanceiraId": {
-          "type": "string",
-          "description": "Referência à ContaFinanceira de origem desta transação. (Relacionamento: ContaFinanceira 1:N Transacao)"
-        },
-        "dataImportacao": {
-          "type": "string",
-          "description": "Data e hora em que esta transação foi importada para o sistema.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "data": { "type": "string", "format": "date" },
+        "tipo": { "type": "string" },
+        "category": { "type": "string" },
+        "isIgnored": { "type": "boolean" }
       },
-      "required": [
-        "id",
-        "descricao",
-        "descricaoOriginal",
-        "valor",
-        "data",
-        "tipo",
-        "categoriaId",
-        "contaFinanceiraId",
-        "dataImportacao"
-      ]
+      "required": ["id", "descricao", "valor", "data", "tipo"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous",
-      "google.com"
-    ]
+    "providers": ["password", "anonymous", "google.com"]
   },
   "firestore": {
     "structure": [
@@ -133,60 +52,24 @@
         "path": "/users/{userId}/contasFinanceiras/{contaFinanceiraId}",
         "definition": {
           "entityName": "ContaFinanceira",
-          "schema": {
-            "$ref": "#/backend/entities/ContaFinanceira"
-          },
-          "description": "Coleção que armazena as contas financeiras cadastradas por um usuário específico.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "O identificador único do usuário proprietário."
-            },
-            {
-              "name": "contaFinanceiraId",
-              "description": "O identificador único da conta financeira."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/ContaFinanceira" },
+          "description": "Contas financeiras do usuário."
         }
       },
       {
         "path": "/users/{userId}/categorias/{categoriaId}",
         "definition": {
           "entityName": "Categoria",
-          "schema": {
-            "$ref": "#/backend/entities/Categoria"
-          },
-          "description": "Coleção que armazena as categorias personalizadas criadas por um usuário.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "O identificador único do usuário proprietário."
-            },
-            {
-              "name": "categoriaId",
-              "description": "O identificador único da categoria."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Categoria" },
+          "description": "Categorias personalizadas."
         }
       },
       {
-        "path": "/users/{userId}/transacoes/{transacaoId}",
+        "path": "/users/{userId}/transactions/{transacaoId}",
         "definition": {
           "entityName": "Transacao",
-          "schema": {
-            "$ref": "#/backend/entities/Transacao"
-          },
-          "description": "Coleção que armazena todas as transações financeiras pertencentes a um usuário.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "O identificador único do usuário proprietário."
-            },
-            {
-              "name": "transacaoId",
-              "description": "O identificador único da transação."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Transacao" },
+          "description": "Transações financeiras (usando nome em inglês conforme o código)."
         }
       },
       {
@@ -196,28 +79,12 @@
           "schema": {
             "type": "object",
             "properties": {
-              "categories": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
+              "categories": { "type": "array", "items": { "type": "string" } }
             }
           },
-          "description": "Armazena configurações personalizadas do usuário, como a lista de categorias editáveis.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "O identificador único do usuário."
-            },
-            {
-              "name": "settingId",
-              "description": "O identificador do documento de configuração (ex: 'config')."
-            }
-          ]
+          "description": "Configurações do usuário."
         }
       }
-    ],
-    "reasoning": "A estrutura foi atualizada para incluir a subcoleção 'settings', permitindo que o usuário armazene e gerencie preferências globais como a lista de categorias personalizadas de forma segura e privada."
+    ]
   }
 }
