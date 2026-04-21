@@ -1,6 +1,6 @@
 
-// Service Worker básico para permitir a instalação do PWA
-const CACHE_NAME = 'orcamento-inteligente-v1';
+// Service Worker simplificado para garantir instalabilidade PWA
+const CACHE_NAME = 'orcsmart-cache-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -11,8 +11,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Estratégia Network-first: tenta a rede, se falhar (offline), não faz nada especial por enquanto
-  // (O objetivo principal aqui é apenas satisfazer o critério de instalação do PWA)
+  // Apenas passa as requisições adiante. 
+  // O objetivo principal aqui é cumprir os requisitos de PWA instalável.
   event.respondWith(fetch(event.request).catch(() => {
     return caches.match(event.request);
   }));

@@ -32,7 +32,6 @@ import {
   User,
   Calendar,
   Tag,
-  Notebook,
   MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -120,12 +119,12 @@ export function TransactionTable({
                   )}
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex-1 min-w-0 space-y-1">
                   <div className="w-full">
                     <textarea
                       value={t.description}
                       onChange={(e) => onUpdate(t.id, { description: e.target.value })}
-                      className="w-full border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-sm sm:text-base overflow-hidden resize-none min-h-[1.5em]"
+                      className="w-full border-none bg-transparent h-auto p-0 font-bold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-sm sm:text-base overflow-hidden resize-none min-h-[1.5em] leading-tight"
                       disabled={isIgnoredList}
                       rows={1}
                       onInput={(e) => {
@@ -136,13 +135,12 @@ export function TransactionTable({
                     />
                   </div>
 
-                  {/* Campo Observações - Menor no mobile */}
                   <div className="w-full group/obs">
                     <textarea
                       value={t.observations || ''}
                       placeholder="Obs..."
                       onChange={(e) => onUpdate(t.id, { observations: e.target.value })}
-                      className="w-full border-none bg-transparent h-auto p-0 text-[11px] sm:text-sm text-slate-400 group-hover/obs:text-slate-500 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all italic overflow-hidden resize-none min-h-[1.2em]"
+                      className="w-full border-none bg-transparent h-auto p-0 text-[11px] sm:text-xs text-slate-400 group-hover/obs:text-slate-500 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all italic overflow-hidden resize-none min-h-[1.2em]"
                       disabled={isIgnoredList}
                       rows={1}
                       onInput={(e) => {
@@ -153,9 +151,9 @@ export function TransactionTable({
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] sm:text-xs text-slate-500 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] sm:text-xs text-slate-500">
                     <div className="flex items-center gap-1 shrink-0">
-                      <Calendar className="h-3 w-3" />
+                      <Calendar className="h-2.5 w-2.5" />
                       <span>{formatDate(t.date)}</span>
                     </div>
                     
@@ -164,14 +162,14 @@ export function TransactionTable({
                       <span className="font-medium">{getBankName(t.bank)}</span>
                     </div>
 
-                    <div className="flex items-center gap-1 min-w-[100px] sm:min-w-[140px]">
-                      <Tag className="h-3 w-3 shrink-0" />
+                    <div className="flex items-center gap-1 min-w-[90px] max-w-[120px] sm:max-w-none">
+                      <Tag className="h-2.5 w-2.5 shrink-0" />
                       <Select
                         value={t.category}
                         onValueChange={(val) => handleCategorySelection(t.id, t.description, val)}
                         disabled={isIgnoredList}
                       >
-                        <SelectTrigger className="h-5 border-none bg-transparent hover:bg-slate-100 focus:ring-0 shadow-none text-[10px] sm:text-xs font-medium px-1">
+                        <SelectTrigger className="h-5 border-none bg-transparent hover:bg-slate-100 focus:ring-0 shadow-none text-[10px] sm:text-xs font-medium px-1 truncate">
                           <SelectValue placeholder="Cat" />
                         </SelectTrigger>
                         <SelectContent>
@@ -187,16 +185,15 @@ export function TransactionTable({
                 </div>
 
                 <div className="flex flex-col items-end justify-between self-stretch shrink-0">
-                  <div className={`font-bold text-sm sm:text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <div className={`font-black text-sm sm:text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
                   </div>
 
-                  <div className="flex items-center gap-0.5 sm:gap-1">
-                    {/* Menu Mobile */}
+                  <div className="flex items-center gap-0.5">
                     <div className="sm:hidden">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -224,7 +221,6 @@ export function TransactionTable({
                       </DropdownMenu>
                     </div>
 
-                    {/* Desktop Actions */}
                     <div className="hidden sm:flex items-center gap-1">
                       <TooltipProvider>
                         {!isIgnoredList ? (
