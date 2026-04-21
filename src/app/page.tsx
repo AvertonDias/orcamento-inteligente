@@ -215,7 +215,27 @@ export default function Home() {
   const handleImport = (newTransactions: Transaction[]) => {
     if (!db || !user) return;
     const colRef = collection(db, 'users', user.uid, 'transactions');
-    newTransactions.forEach(t => {
+    
+    // Gerar "impressões digitais" das transações existentes para evitar duplicatas
+    // Consideramos duplicata se data, descrição, valor, banco e tipo forem idênticos
+    const existingFingerprints = new Set(
+      transactions.map(t => `${t.date}_${t.description.trim()}_${t.amount.toFixed(2)}_${t.bank}_${t.type}`)
+    );
+
+    const uniqueNewOnes = newTransactions.filter(t => {
+      const fingerprint = `${t.date}_${t.description.trim()}_${t.amount.toFixed(2)}_${t.bank}_${t.type}`;
+      return !existingFingerprints.has(fingerprint);
+    });
+
+    if (uniqueNewOnes.length === 0) {
+      toast({
+        title: "Nenhuma transação nova",
+        description: "Todas as transações do arquivo já foram importadas anteriormente."
+      });
+      return;
+    }
+
+    uniqueNewOnes.forEach(t => {
       addDoc(colRef, {
         ...t,
         userId: user.uid,
@@ -224,6 +244,11 @@ export default function Home() {
       }).catch(err => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: colRef.path, operation: 'create', requestResourceData: t }));
       });
+    });
+
+    toast({
+      title: "Importação concluída",
+      description: `${uniqueNewOnes.length} novas transações adicionadas. (${newTransactions.length - uniqueNewOnes.length} duplicatas ignoradas)`
     });
   };
 
