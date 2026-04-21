@@ -49,6 +49,17 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return dateStr;
   };
 
+  /**
+   * Limpa a descrição removendo padrões de data comuns em extratos (Ex: 06/03/2026)
+   */
+  const cleanDescription = (desc: string) => {
+    return desc
+      .replace(/\d{2}\/\d{2}\/\d{4}/g, '') // Remove DD/MM/AAAA
+      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')   // Remove DD/MM/AA
+      .replace(/\s\s+/g, ' ')               // Remove espaços duplos
+      .trim();
+  };
+
   const handleButtonClick = (bank: BankType) => {
     setActiveBank(bank);
     fileInputRef.current?.click();
@@ -114,21 +125,24 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           }
 
           const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
+          
+          // Limpeza da descrição removendo datas e espaços extras
+          const cleanedDescription = cleanDescription(fullDescription);
 
           let category = 'Outros';
           try {
             const suggestion = await suggestTransactionCategory({
-              description: fullDescription,
+              description: cleanedDescription,
             });
             category = suggestion.suggestedCategory;
           } catch (error) {
-            // Keep default category on AI failure
+            // Mantém categoria padrão em caso de erro na IA
           }
 
           newTransactions.push({
             id: Math.random().toString(36).substring(2, 11),
             date: isoDate,
-            description: fullDescription,
+            description: cleanedDescription,
             amount: Math.abs(amount),
             category,
             type,
