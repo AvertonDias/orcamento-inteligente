@@ -63,7 +63,8 @@
                   "type": "object",
                   "properties": {
                     "name": { "type": "string" },
-                    "value": { "type": "number" }
+                    "value": { "type": "number" },
+                    "transactionId": { "type": "string" }
                   }
                 }
               },
@@ -74,7 +75,8 @@
                   "properties": {
                     "name": { "type": "string" },
                     "value": { "type": "number" },
-                    "type": { "type": "string", "enum": ["plus", "minus"] }
+                    "type": { "type": "string", "enum": ["plus", "minus"] },
+                    "transactionId": { "type": "string" }
                   }
                 }
               }

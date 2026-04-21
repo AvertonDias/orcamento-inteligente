@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,7 @@ import {
   Receipt, 
   X, 
   Search,
-  ChevronDown,
   LayoutGrid,
-  FileText,
   MousePointerClick
 } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
@@ -46,12 +44,14 @@ import { cn } from '@/lib/utils';
 interface BaseValueItem {
   name: string;
   value: number;
+  transactionId?: string;
 }
 
 interface AdjustmentItem {
   name: string;
   value: number;
   type: 'plus' | 'minus';
+  transactionId?: string;
 }
 
 interface AdjustmentTable {
@@ -82,15 +82,13 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
 
   const { data: adjustmentData, isLoading } = useDoc(adjustmentRef);
   
-  const tables: AdjustmentTable[] = (adjustmentData?.tables || []).map((t: any) => ({
-    ...t,
-    baseValues: t.baseValues || [{ name: 'Valor Base', value: t.baseValue || 0 }],
-    items: t.items || []
-  }));
-
-  const filteredTransactions = transactions.filter(t => 
-    t.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const tables: AdjustmentTable[] = useMemo(() => {
+    return (adjustmentData?.tables || []).map((t: any) => ({
+      ...t,
+      baseValues: t.baseValues || [{ name: 'Valor Base', value: t.baseValue || 0 }],
+      items: t.items || []
+    }));
+  }, [adjustmentData]);
 
   const handleSave = (newTables: AdjustmentTable[]) => {
     if (!adjustmentRef) return;
@@ -141,7 +139,8 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     const selectedTransactions = transactions.filter(t => selectedForBase.includes(t.id));
     const newBases: BaseValueItem[] = selectedTransactions.map(t => ({
       name: t.description,
-      value: t.amount
+      value: t.amount,
+      transactionId: t.id
     }));
 
     const table = tables.find(t => t.id === tableId);
@@ -181,7 +180,8 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     const newItems: AdjustmentItem[] = selectedTransactions.map(t => ({
       name: t.description,
       value: t.amount,
-      type: 'minus'
+      type: 'minus',
+      transactionId: t.id
     }));
 
     const table = tables.find(t => t.id === tableId);
@@ -223,6 +223,16 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
             }, 0);
             const finalTotal = baseTotal + adjustmentsTotal;
 
+            // Transações já usadas nesta tabela
+            const usedIds = new Set([
+              ...(table.baseValues.map(v => v.transactionId).filter(Boolean) as string[]),
+              ...(table.items.map(i => i.transactionId).filter(Boolean) as string[])
+            ]);
+
+            const filteredForCurrentTable = transactions.filter(t => 
+              t.description.toLowerCase().includes(searchTerm.toLowerCase()) && !usedIds.has(t.id)
+            );
+
             return (
               <Card key={table.id} className="border-none shadow-lg overflow-hidden bg-white flex flex-col h-full">
                 <CardHeader className="bg-slate-50/80 border-b py-3 flex flex-row items-center justify-between">
@@ -240,7 +250,6 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                 </CardHeader>
                 
                 <CardContent className="pt-6 space-y-6 flex-1">
-                  {/* Section: Base Values */}
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Valores Base (Faturas / Iniciais)</label>
                     
@@ -290,7 +299,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                               variant="ghost" 
                               size="sm" 
                               className="h-8 text-[10px] font-bold text-sky-600 hover:bg-sky-50 border border-dashed border-sky-200 gap-1.5"
-                              onClick={() => setIsBasePickerOpen(table.id)}
+                              onClick={() => {
+                                setIsBasePickerOpen(table.id);
+                                setSearchTerm('');
+                              }}
                             >
                               <MousePointerClick className="h-3.5 w-3.5" /> Escolher do Extrato
                             </Button>
@@ -298,7 +310,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                           <DialogContent className="sm:max-w-2xl max-w-[95vw]">
                             <DialogHeader>
                               <DialogTitle>Escolher do Extrato</DialogTitle>
-                              <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
+                              <DialogDescription>Selecione um ou mais lançamentos (duplicados são ocultados).</DialogDescription>
                             </DialogHeader>
                             <div className="py-4 space-y-4">
                               <div className="relative">
@@ -312,26 +324,30 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                               </div>
                               <ScrollArea className="h-[50vh] border rounded-md">
                                 <div className="divide-y divide-slate-100">
-                                  {filteredTransactions.map((t) => (
-                                    <div 
-                                      key={t.id} 
-                                      className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
-                                      onClick={() => {
-                                        if (selectedForBase.includes(t.id)) {
-                                          setSelectedForBase(selectedForBase.filter(id => id !== t.id));
-                                        } else {
-                                          setSelectedForBase([...selectedForBase, t.id]);
-                                        }
-                                      }}
-                                    >
-                                      <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
-                                        <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                  {filteredForCurrentTable.length === 0 ? (
+                                    <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma transação disponível para seleção.</div>
+                                  ) : (
+                                    filteredForCurrentTable.map((t) => (
+                                      <div 
+                                        key={t.id} 
+                                        className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
+                                        onClick={() => {
+                                          if (selectedForBase.includes(t.id)) {
+                                            setSelectedForBase(selectedForBase.filter(id => id !== t.id));
+                                          } else {
+                                            setSelectedForBase([...selectedForBase, t.id]);
+                                          }
+                                        }}
+                                      >
+                                        <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
+                                          <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
                                       </div>
-                                      <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
-                                    </div>
-                                  ))}
+                                    ))
+                                  )}
                                 </div>
                               </ScrollArea>
                             </div>
@@ -347,13 +363,15 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                     </div>
                   </div>
 
-                  {/* Section: Adjustments */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ajustes (Somas e Deduções)</label>
                        <Dialog open={isItemsPickerOpen === table.id} onOpenChange={(open) => !open && setIsItemsPickerOpen(null)}>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-primary hover:bg-primary/5 gap-1 px-1" onClick={() => setIsItemsPickerOpen(table.id)}>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-primary hover:bg-primary/5 gap-1 px-1" onClick={() => {
+                            setIsItemsPickerOpen(table.id);
+                            setSearchTerm('');
+                          }}>
                             <Plus className="h-3 w-3" />
                             Importar do Extrato
                           </Button>
@@ -361,7 +379,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                         <DialogContent className="sm:max-w-2xl max-w-[95vw]">
                           <DialogHeader>
                             <DialogTitle>Importar Ajustes</DialogTitle>
-                            <DialogDescription>Selecione os lançamentos que deseja adicionar à tabela.</DialogDescription>
+                            <DialogDescription>Selecione lançamentos do extrato (duplicados são ocultados).</DialogDescription>
                           </DialogHeader>
                           <div className="py-4 space-y-4">
                             <div className="relative">
@@ -375,26 +393,30 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             </div>
                             <ScrollArea className="h-[50vh] border rounded-md">
                               <div className="divide-y divide-slate-100">
-                                {filteredTransactions.map((t) => (
-                                  <div 
-                                    key={t.id} 
-                                    className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
-                                    onClick={() => {
-                                      if (selectedForItems.includes(t.id)) {
-                                        setSelectedForItems(selectedForItems.filter(id => id !== t.id));
-                                      } else {
-                                        setSelectedForItems([...selectedForItems, t.id]);
-                                      }
-                                    }}
-                                  >
-                                    <Checkbox checked={selectedForItems.includes(t.id)} onCheckedChange={() => {}} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
-                                      <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                {filteredForCurrentTable.length === 0 ? (
+                                  <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma transação disponível para seleção.</div>
+                                ) : (
+                                  filteredForCurrentTable.map((t) => (
+                                    <div 
+                                      key={t.id} 
+                                      className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
+                                      onClick={() => {
+                                        if (selectedForItems.includes(t.id)) {
+                                          setSelectedForItems(selectedForItems.filter(id => id !== t.id));
+                                        } else {
+                                          setSelectedForItems([...selectedForItems, t.id]);
+                                        }
+                                      }}
+                                    >
+                                      <Checkbox checked={selectedForItems.includes(t.id)} onCheckedChange={() => {}} />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
+                                        <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                      </div>
+                                      <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
                                     </div>
-                                    <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
-                                  </div>
-                                ))}
+                                  ))
+                                )}
                               </div>
                             </ScrollArea>
                           </div>
@@ -453,13 +475,13 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                   </div>
                                   <DropdownMenuSeparator />
                                   <ScrollArea className="h-60">
-                                    {filteredTransactions.length === 0 ? (
-                                      <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação encontrada.</div>
+                                    {filteredForCurrentTable.length === 0 ? (
+                                      <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação disponível.</div>
                                     ) : (
-                                      filteredTransactions.map((t) => (
+                                      filteredForCurrentTable.map((t) => (
                                         <DropdownMenuItem 
                                           key={t.id} 
-                                          onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount })}
+                                          onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount, transactionId: t.id })}
                                           className="flex flex-col items-start gap-1 py-2 cursor-pointer"
                                         >
                                           <span className="font-semibold text-xs leading-tight pr-2">{t.description}</span>
