@@ -114,9 +114,7 @@ export default function Home() {
       })
       .catch((err: any) => {
         if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/redirect-cancelled-by-user') {
-          if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/unauthorized-domain') {
-            setAuthError("Domínio não autorizado no Firebase Console. Adicione este domínio em Authentication > Settings.");
-          }
+          setAuthError(`Erro na autenticação. Verifique se o domínio está autorizado no console do Firebase.`);
         }
       });
   }, [auth, toast]);
@@ -236,12 +234,30 @@ export default function Home() {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleUpdateSimilarCategory = async (description: string, category: string) => {
     if (!db || !user) return;
-    const docRef = doc(db, 'users', user.uid, 'transactions', id);
-    deleteDoc(docRef).catch(err => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    const similar = (transactions || []).filter(t => t.description === description && t.category !== category);
+    if (similar.length === 0) return;
+
+    const batch = writeBatch(db);
+    similar.forEach(t => {
+      const docRef = doc(db, 'users', user.uid, 'transactions', t.id);
+      batch.update(docRef, { category });
     });
+
+    try {
+      await batch.commit();
+      toast({
+        title: "Atualização em massa",
+        description: `${similar.length} transações similares foram atualizadas para "${category}".`
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar as transações similares."
+      });
+    }
   };
 
   const handleIgnoreSimilar = async (description: string) => {
@@ -314,7 +330,7 @@ export default function Home() {
             {authError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erro</AlertTitle>
+                <AlertTitle>Aviso</AlertTitle>
                 <AlertDescription>{authError}</AlertDescription>
               </Alert>
             )}
@@ -416,7 +432,8 @@ export default function Home() {
                 />
                 <TransactionTable 
                   transactions={filteredActive} onUpdate={handleUpdate} onDelete={handleDelete} 
-                  onIgnoreSimilar={handleIgnoreSimilar} categories={categories}
+                  onIgnoreSimilar={handleIgnoreSimilar} onUpdateSimilarCategory={handleUpdateSimilarCategory}
+                  categories={categories}
                 />
               </div>
               <aside><FinanceChart transactions={filteredActive} /></aside>
