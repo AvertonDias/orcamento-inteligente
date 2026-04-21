@@ -1,14 +1,32 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Calculator, Receipt, X } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Calculator, 
+  Receipt, 
+  X, 
+  ListOrdered,
+  ChevronDown
+} from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { Transaction } from '@/app/lib/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AdjustmentItem {
   name: string;
@@ -23,10 +41,11 @@ interface AdjustmentTable {
 }
 
 interface MonthlyAdjustmentsProps {
-  yearMonth: string; // Formato: "YYYY-MM"
+  yearMonth: string;
+  transactions: Transaction[];
 }
 
-export function MonthlyAdjustments({ yearMonth }: MonthlyAdjustmentsProps) {
+export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmentsProps) {
   const { user } = useUser();
   const db = useFirestore();
 
@@ -123,17 +142,61 @@ export function MonthlyAdjustments({ yearMonth }: MonthlyAdjustmentsProps) {
                   </Button>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-4 bg-sky-50 p-3 rounded-lg border border-sky-100">
-                    <span className="text-sm font-semibold text-sky-900 uppercase tracking-wider">Valor Base (Fatura)</span>
-                    <Input 
-                      type="number" 
-                      value={table.baseValue} 
-                      onChange={(e) => updateTable(table.id, { baseValue: parseFloat(e.target.value) || 0 })}
-                      className="w-32 h-8 text-right font-bold text-sky-700 bg-white border-sky-200"
-                    />
+                  <div className="space-y-3 mb-6">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Base (Fatura)</label>
+                    <div className="flex items-center gap-2 bg-sky-50 p-3 rounded-lg border border-sky-100">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 px-2 text-sky-700 hover:bg-sky-100 gap-2 shrink-0">
+                            <ListOrdered className="h-4 w-4" />
+                            <span>Escolher do Extrato</span>
+                            <ChevronDown className="h-3 w-3 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-80" align="start">
+                          <DropdownMenuLabel>Selecione um lançamento</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <ScrollArea className="h-72">
+                            {transactions.length === 0 ? (
+                              <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação encontrada.</div>
+                            ) : (
+                              transactions.map((t) => (
+                                <DropdownMenuItem 
+                                  key={t.id} 
+                                  onClick={() => updateTable(table.id, { baseValue: t.amount, name: t.description })}
+                                  className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                                >
+                                  <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
+                                  <div className="flex justify-between w-full text-[10px] opacity-70">
+                                    <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
+                                    <span className="font-bold">{formatCurrency(t.amount)}</span>
+                                  </div>
+                                </DropdownMenuItem>
+                              ))
+                            )}
+                          </ScrollArea>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <div className="flex-1" />
+
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-sky-400">R$</span>
+                        <Input 
+                          type="number" 
+                          value={table.baseValue} 
+                          onChange={(e) => updateTable(table.id, { baseValue: parseFloat(e.target.value) || 0 })}
+                          className="w-32 h-8 text-right font-bold text-sky-700 bg-white border-sky-200 pl-6"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Itens para Deduzir</label>
+                       <span className="text-[10px] font-bold text-rose-400">Total Deduções: {formatCurrency(itemsTotal)}</span>
+                    </div>
                     {table.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2 group">
                         <Input 

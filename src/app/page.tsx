@@ -288,9 +288,8 @@ export default function Home() {
               <div className="space-y-12">
                 <DashboardSummary transactions={filteredActive} />
                 
-                {/* Novas Calculadoras e Ajustes Mensais */}
                 {yearMonthKey && (
-                  <MonthlyAdjustments yearMonth={yearMonthKey} />
+                  <MonthlyAdjustments yearMonth={yearMonthKey} transactions={filteredActive} />
                 )}
 
                 <div className="grid gap-8 lg:grid-cols-3 pt-8 border-t">
