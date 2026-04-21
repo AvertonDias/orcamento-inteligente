@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,12 @@ export function AuthView({ auth }: AuthViewProps) {
   const [resetSent, setResetSent] = useState(false);
   const { toast } = useToast();
 
+  // Limpa erros ao trocar de modo (Login/Cadastro)
+  useEffect(() => {
+    setAuthError(null);
+    setResetSent(false);
+  }, [authMode]);
+
   const handleGoogleLogin = async () => {
     if (!auth) return;
     setIsAuthProcessing(true);
@@ -59,14 +65,16 @@ export function AuthView({ auth }: AuthViewProps) {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
-      setAuthError(err.message);
+      setAuthError(err.message || "Erro ao autenticar. Verifique seus dados.");
     } finally {
       setIsAuthProcessing(false);
     }
   };
 
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Evita qualquer comportamento de submit acidental
     if (!auth) return;
+    
     if (!email) {
       setAuthError("Por favor, insira seu e-mail primeiro para recuperar a senha.");
       return;
@@ -122,7 +130,10 @@ export function AuthView({ auth }: AuthViewProps) {
                 type="email" 
                 autoComplete="email"
                 value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (authError) setAuthError(null);
+                }} 
                 required 
               />
             </div>
@@ -145,7 +156,10 @@ export function AuthView({ auth }: AuthViewProps) {
                 type="password" 
                 autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                 value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (authError) setAuthError(null);
+                }} 
                 required 
               />
             </div>
@@ -171,8 +185,6 @@ export function AuthView({ auth }: AuthViewProps) {
         <CardFooter>
           <Button variant="link" className="w-full text-xs" onClick={() => {
             setAuthMode(authMode === 'login' ? 'signup' : 'login');
-            setAuthError(null);
-            setResetSent(false);
           }}>
             {authMode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
           </Button>
