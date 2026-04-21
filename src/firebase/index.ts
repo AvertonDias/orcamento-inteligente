@@ -10,6 +10,7 @@ export function initializeFirebase(): {
   firestore: Firestore;
   auth: Auth;
 } {
+  // Inicialização segura apenas se estiver no navegador
   const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   const firestore = getFirestore(firebaseApp);
   const auth = getAuth(firebaseApp);
