@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,7 @@ interface MonthlyAdjustmentsProps {
 export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmentsProps) {
   const { user } = useUser();
   const db = useFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const adjustmentRef = useMemoFirebase(() => {
     if (!db || !user || !yearMonth) return null;
@@ -60,6 +61,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
 
   const { data: adjustmentData, isLoading } = useDoc(adjustmentRef);
   const tables: AdjustmentTable[] = adjustmentData?.tables || [];
+
+  const filteredTransactions = transactions.filter(t => 
+    t.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSave = (newTables: AdjustmentTable[]) => {
     if (!adjustmentRef) return;
@@ -151,7 +156,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                   <div className="space-y-3 mb-6">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Base (Fatura / Inicial)</label>
                     <div className="flex items-center gap-2 bg-sky-50 p-3 rounded-lg border border-sky-100">
-                      <DropdownMenu>
+                      <DropdownMenu onOpenChange={(open) => !open && setSearchTerm('')}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 px-2 text-sky-700 hover:bg-sky-100 gap-2 shrink-0">
                             <ListOrdered className="h-4 w-4" />
@@ -161,12 +166,24 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-80" align="start">
                           <DropdownMenuLabel>Selecione um lançamento</DropdownMenuLabel>
+                          <div className="px-2 pb-2">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                              <Input 
+                                placeholder="Filtrar por nome..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="h-8 pl-8 text-xs bg-slate-50"
+                                onKeyDown={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
                           <DropdownMenuSeparator />
                           <ScrollArea className="h-72">
-                            {transactions.length === 0 ? (
+                            {filteredTransactions.length === 0 ? (
                               <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação encontrada.</div>
                             ) : (
-                              transactions.map((t) => (
+                              filteredTransactions.map((t) => (
                                 <DropdownMenuItem 
                                   key={t.id} 
                                   onClick={() => updateTable(table.id, { baseValue: t.amount, name: t.description })}
@@ -225,7 +242,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                               className="flex-1 h-8 text-sm bg-white"
                             />
                             
-                            <DropdownMenu>
+                            <DropdownMenu onOpenChange={(open) => !open && setSearchTerm('')}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary shrink-0">
                                   <Search className="h-3.5 w-3.5" />
@@ -233,21 +250,37 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                               </DropdownMenuTrigger>
                               <DropdownMenuContent className="w-80" align="end">
                                 <DropdownMenuLabel>Escolher do Extrato</DropdownMenuLabel>
+                                <div className="px-2 pb-2">
+                                  <div className="relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                    <Input 
+                                      placeholder="Filtrar por nome..." 
+                                      value={searchTerm}
+                                      onChange={(e) => setSearchTerm(e.target.value)}
+                                      className="h-8 pl-8 text-xs bg-slate-50"
+                                      onKeyDown={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                </div>
                                 <DropdownMenuSeparator />
                                 <ScrollArea className="h-60">
-                                  {transactions.map((t) => (
-                                    <DropdownMenuItem 
-                                      key={t.id} 
-                                      onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount })}
-                                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
-                                    >
-                                      <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
-                                      <div className="flex justify-between w-full text-[10px] opacity-70">
-                                        <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
-                                        <span className="font-bold">{formatCurrency(t.amount)}</span>
-                                      </div>
-                                    </DropdownMenuItem>
-                                  ))}
+                                  {filteredTransactions.length === 0 ? (
+                                    <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação encontrada.</div>
+                                  ) : (
+                                    filteredTransactions.map((t) => (
+                                      <DropdownMenuItem 
+                                        key={t.id} 
+                                        onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount })}
+                                        className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                                      >
+                                        <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
+                                        <div className="flex justify-between w-full text-[10px] opacity-70">
+                                          <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
+                                          <span className="font-bold">{formatCurrency(t.amount)}</span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    ))
+                                  )}
                                 </ScrollArea>
                               </DropdownMenuContent>
                             </DropdownMenu>
