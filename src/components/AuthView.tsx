@@ -5,11 +5,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { LayoutDashboard, LogIn, Loader2, AlertCircle } from 'lucide-react';
-import { Auth, GoogleAuthProvider, signInWithRedirect, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { Auth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
 interface AuthViewProps {
   auth: Auth | null;
@@ -25,10 +25,14 @@ export function AuthView({ auth }: AuthViewProps) {
   const handleGoogleLogin = async () => {
     if (!auth) return;
     setIsAuthProcessing(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
+      // Usando signInWithPopup em vez de Redirect para evitar erros de init.json 404 em ambiente de dev
+      await signInWithPopup(auth, provider);
     } catch (err: any) {
+      setAuthError(err.message);
+    } finally {
       setIsAuthProcessing(false);
     }
   };
@@ -64,7 +68,7 @@ export function AuthView({ auth }: AuthViewProps) {
           {authError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Aviso</AlertTitle>
+              <AlertTitle>Erro de Autenticação</AlertTitle>
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
@@ -96,7 +100,10 @@ export function AuthView({ auth }: AuthViewProps) {
               {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
             </Button>
           </form>
-          <Separator />
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center"><Separator /></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Ou continue com</span></div>
+          </div>
           <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={isAuthProcessing}>
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -108,7 +115,7 @@ export function AuthView({ auth }: AuthViewProps) {
           </Button>
         </CardContent>
         <CardFooter>
-          <Button variant="link" className="w-full" onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}>
+          <Button variant="link" className="w-full text-xs" onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}>
             {authMode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
           </Button>
         </CardFooter>

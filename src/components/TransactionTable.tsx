@@ -62,7 +62,7 @@ export function TransactionTable({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-lg bg-white/50">
         <p className="text-muted-foreground mb-2 font-medium">Nenhuma transação encontrada</p>
-        <p className="text-sm text-muted-foreground">Importe um arquivo CSV para começar a organizar seu orçamento.</p>
+        <p className="text-sm text-muted-foreground">Importe um arquivo CSV ou adicione manualmente para começar.</p>
       </div>
     );
   }
@@ -203,7 +203,7 @@ export function TransactionTable({
                                 <Ban className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Ignorar transação</TooltipContent>
+                            <TooltipContent>Ignorar esta</TooltipContent>
                           </Tooltip>
 
                           {onIgnoreSimilar && (
@@ -218,7 +218,7 @@ export function TransactionTable({
                                   <History className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Ignorar similares sempre</TooltipContent>
+                              <TooltipContent>Ignorar todas com este nome</TooltipContent>
                             </Tooltip>
                           )}
                         </>
@@ -234,7 +234,7 @@ export function TransactionTable({
                               <ArrowUpCircle className="h-4 w-4 rotate-180" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Restaurar transação</TooltipContent>
+                          <TooltipContent>Restaurar</TooltipContent>
                         </Tooltip>
                       )}
                     </TooltipProvider>
@@ -258,9 +258,9 @@ export function TransactionTable({
       <AlertDialog open={!!pendingCategoryUpdate} onOpenChange={(open) => !open && setPendingCategoryUpdate(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Atualizar transações semelhantes?</AlertDialogTitle>
+            <AlertDialogTitle>Atualizar semelhantes?</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja atualizar a categoria de todas as transações com a descrição "{pendingCategoryUpdate?.description}" para "{pendingCategoryUpdate?.category}" ou apenas esta?
+              Deseja atualizar a categoria de todas as transações com a descrição "{pendingCategoryUpdate?.description}" para "{pendingCategoryUpdate?.category}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
