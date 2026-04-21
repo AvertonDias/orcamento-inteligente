@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef } from 'react';
@@ -64,8 +63,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       clean = clean.replace(/\./g, ''); // Remove separador de milhar (ponto)
       clean = clean.replace(',', '.');   // Transforma vírgula em ponto decimal
     }
-    // Se não tem vírgula mas tem ponto, assumimos que o ponto já é o decimal (padrão internacional)
-    // A menos que o ponto seja claramente um separador de milhar (ex: 1.000), mas bancos costumam usar decimais.
     
     const result = parseFloat(clean);
     return isNaN(result) ? 0 : result;
