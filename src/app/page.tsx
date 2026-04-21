@@ -9,7 +9,7 @@ import { TransactionDialog } from '@/components/TransactionDialog';
 import { TransactionFilters } from '@/components/TransactionFilters';
 import { FinanceChart } from '@/components/FinanceChart';
 import { AnnualSummaryView } from '@/components/AnnualSummaryView';
-import { Transaction } from '@/app/lib/types';
+import { Transaction, DEFAULT_CATEGORIES } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -24,7 +24,9 @@ import {
   Lock,
   BarChart3,
   AlertCircle,
-  EyeOff
+  EyeOff,
+  Settings as SettingsIcon,
+  Tag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -61,6 +63,7 @@ import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/e
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -340,7 +343,11 @@ export default function Home() {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
         <Tabs defaultValue="dashboard">
-          <TabsList className="mb-6"><TabsTrigger value="dashboard"><List className="h-4 w-4 mr-2" />Lançamentos</TabsTrigger><TabsTrigger value="annual"><BarChart3 className="h-4 w-4 mr-2" />Resumo Anual</TabsTrigger></TabsList>
+          <TabsList className="mb-6">
+            <TabsTrigger value="dashboard"><List className="h-4 w-4 mr-2" />Lançamentos</TabsTrigger>
+            <TabsTrigger value="annual"><BarChart3 className="h-4 w-4 mr-2" />Resumo Anual</TabsTrigger>
+            <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Configurações</TabsTrigger>
+          </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
             <DashboardSummary transactions={filteredActive} />
@@ -368,7 +375,66 @@ export default function Home() {
             )}
           </TabsContent>
 
-          <TabsContent value="annual"><AnnualSummaryView transactions={activeTransactions} /></TabsContent>
+          <TabsContent value="annual">
+            <AnnualSummaryView transactions={activeTransactions} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="max-w-2xl space-y-6">
+              <Card className="border-none shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Tag className="h-5 w-5 text-primary" />
+                    Categorias Disponíveis
+                  </CardTitle>
+                  <CardDescription>
+                    Estas são as categorias que você pode usar para organizar seus gastos.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {DEFAULT_CATEGORIES.map(cat => (
+                      <Badge key={cat} variant="secondary" className="px-3 py-1 text-sm font-medium">
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="bg-slate-50 rounded-b-lg border-t">
+                  <p className="text-xs text-muted-foreground">
+                    Para editar as categorias disponíveis, você pode modificar o arquivo <code>src/app/lib/types.ts</code>.
+                  </p>
+                </CardFooter>
+              </Card>
+
+              <Card className="border-none shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-xl">Perfil do Usuário</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 p-3 rounded-full">
+                      <Mail className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Email</p>
+                      <p className="text-lg font-bold">{user?.email}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center gap-4">
+                    <div className="bg-slate-100 p-3 rounded-full">
+                      <LayoutDashboard className="h-6 w-6 text-slate-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">ID do Usuário</p>
+                      <p className="text-xs font-mono">{user?.uid}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
       <Toaster />

@@ -11,6 +11,10 @@ export interface Transaction {
   isIgnored?: boolean;
 }
 
+/**
+ * Lista central de categorias. 
+ * Para adicionar ou remover categorias globalmente, edite este array.
+ */
 export const DEFAULT_CATEGORIES = [
   'Alimentação',
   'Transporte',
@@ -21,5 +25,8 @@ export const DEFAULT_CATEGORIES = [
   'Vestuário',
   'Serviços',
   'Investimentos',
+  'Presentes',
+  'Assinaturas',
+  'Impostos',
   'Outros'
 ];
