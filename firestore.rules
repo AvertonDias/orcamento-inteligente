@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE SECURITY PHILOSOPHY:
+     * This ruleset implements a strict "User-Ownership" model. Access control is determined 
+     * primarily by the document's location within the hierarchical path.
+     *
+     * DATA STRUCTURE:
+     * All application data is segregated by user and nested under the /users/{userId} path. 
+     * This includes /contasFinanceiras, /categorias, and /transacoes.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Path-Based Authorization: By nesting data under the UID, we leverage the path itself 
+     *    for authorization, eliminating the need for expensive 'get()' calls or cross-collection lookups.
+     * 2. Authoritative Identity: All access is strictly validated against the 'request.auth.uid'.
+     * 3. Relational Integrity: On document creation, the rules enforce that internal 'id' fields 
+     *    match the Firestore document ID to ensure data consistency.
+     * 4. Structural Segregation: There are no public or shared collections; the system is 
+     *    designed for private, individual financial management.
+     */
+
+    // --- Helper Functions ---
+
+    /** 
+     * @description Checks if the request is made by an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** 
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** 
+     * @description Ensures the document exists and the user is the owner. 
+     * Used for update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Manages the root user document.
+     * @path /users/{userId}
+     * @allow Authenticated user can create their own profile (create).
+     * @deny User 'A' attempting to read or modify User 'B's profile.
+     * @principle Self-creation and ownership-based access.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Manages financial accounts (banks/credit cards) for a specific user.
+       * @path /users/{userId}/contasFinanceiras/{contaId}
+       * @allow Owner creating a new account with a matching internal 'id' (create).
+       * @deny Unauthenticated access or one user listing another user's accounts.
+       * @principle Path-based authorization and ID consistency.
+       */
+      match /contasFinanceiras/{contaId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.id == contaId;
+        allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages custom transaction categories (e.g., 'Food', 'Rent').
+       * @path /users/{userId}/categorias/{categoriaId}
+       * @allow Owner listing their own defined categories (list).
+       * @deny Changing the internal 'id' of a category after creation (update).
+       * @principle Data immutability for relational fields and owner-only access.
+       */
+      match /categorias/{categoriaId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.id == categoriaId;
+        allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Manages individual financial transactions.
+       * @path /users/{userId}/transacoes/{transacaoId}
+       * @allow Owner creating a transaction linked to their own subcollection (create).
+       * @deny A user attempting to delete a transaction that does not exist or belongs to another.
+       * @principle Strict ownership for sensitive financial data.
+       */
+      match /transacoes/{transacaoId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.id == transacaoId;
+        allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    // Default deny for any paths not explicitly matched
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
