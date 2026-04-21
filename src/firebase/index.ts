@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -20,8 +21,8 @@ export function initializeFirebase() {
     // Tenta inicialização automática sem argumentos (exigido pelo App Hosting)
     firebaseApp = initializeApp();
   } catch (e) {
-    // Fallback silencioso para o objeto de configuração.
-    // O erro 'app/no-options' é esperado fora do ambiente de App Hosting e não deve poluir o console.
+    // Fallback para o objeto de configuração manual
+    // Não lançamos erro aqui para evitar poluição no console durante o desenvolvimento
     firebaseApp = initializeApp(firebaseConfig);
   }
 
