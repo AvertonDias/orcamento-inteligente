@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, X, ArrowDownWideNarrow, ArrowUpWideNarrow } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -21,10 +21,8 @@ interface FiltersProps {
   setCategory: (val: string) => void;
   type: string;
   setType: (val: string) => void;
-  startDate: string;
-  setStartDate: (val: string) => void;
-  endDate: string;
-  setEndDate: (val: string) => void;
+  sortOrder: 'asc' | 'desc';
+  setSortOrder: (val: 'asc' | 'desc') => void;
   onClear: () => void;
   categories: string[];
 }
@@ -36,14 +34,12 @@ export function TransactionFilters({
   setCategory,
   type,
   setType,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
+  sortOrder,
+  setSortOrder,
   onClear,
   categories
 }: FiltersProps) {
-  const hasFilters = search || category !== 'all' || type !== 'all' || startDate || endDate;
+  const hasFilters = search || category !== 'all' || type !== 'all';
 
   return (
     <div className="space-y-4 w-full">
@@ -85,32 +81,21 @@ export function TransactionFilters({
       </div>
 
       <div className="flex flex-col sm:flex-row items-end gap-3 w-full">
-        <div className="grid grid-cols-2 gap-3 flex-1 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 w-full">
           <div className="space-y-1.5">
-            <Label htmlFor="startDate" className="text-[10px] font-bold text-slate-500 uppercase px-1">De</Label>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="pl-9 bg-white h-9 text-xs"
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="endDate" className="text-[10px] font-bold text-slate-500 uppercase px-1">Até</Label>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="pl-9 bg-white h-9 text-xs"
-              />
-            </div>
+            <Label className="text-[10px] font-bold text-slate-500 uppercase px-1 tracking-wider">Ordenação por data</Label>
+            <Select value={sortOrder} onValueChange={(val: any) => setSortOrder(val)}>
+              <SelectTrigger className="bg-white h-9 text-xs">
+                <div className="flex items-center gap-2">
+                  {sortOrder === 'desc' ? <ArrowDownWideNarrow className="h-3.5 w-3.5 text-primary" /> : <ArrowUpWideNarrow className="h-3.5 w-3.5 text-primary" />}
+                  <SelectValue placeholder="Ordenar" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Mais recentes primeiro</SelectItem>
+                <SelectItem value="asc">Mais antigos primeiro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -122,7 +107,7 @@ export function TransactionFilters({
             className="h-9 gap-2 text-muted-foreground hover:text-rose-500 shrink-0"
           >
             <X className="h-4 w-4" />
-            <span className="text-xs font-bold uppercase">Limpar</span>
+            <span className="text-xs font-bold uppercase">Limpar filtros</span>
           </Button>
         )}
       </div>

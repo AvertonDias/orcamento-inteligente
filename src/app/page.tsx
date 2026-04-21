@@ -55,8 +55,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -70,9 +69,9 @@ export default function Home() {
     if (!db || !user) return null;
     return query(
       collection(db, 'users', user.uid, 'transactions'),
-      orderBy('date', 'desc')
+      orderBy('date', sortOrder)
     );
-  }, [db, user]);
+  }, [db, user, sortOrder]);
 
   const { data: transactionsData, isLoading: dataLoading } = useCollection(transactionsQuery);
   const transactions = useMemo(() => transactionsData || [], [transactionsData]);
@@ -102,22 +101,18 @@ export default function Home() {
                             t.category.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
       const matchesType = typeFilter === 'all' || t.type === typeFilter;
-      const matchesDateRange = (!startDate || t.date >= startDate) && 
-                               (!endDate || t.date <= endDate);
-      return matchesMonth && matchesSearch && matchesCategory && matchesType && matchesDateRange;
+      return matchesMonth && matchesSearch && matchesCategory && matchesType;
     });
-  }, [activeTransactions, selectedMonth, search, categoryFilter, typeFilter, startDate, endDate]);
+  }, [activeTransactions, selectedMonth, search, categoryFilter, typeFilter]);
 
   const filteredIgnored = useMemo(() => {
     return ignoredTransactions.filter((t) => {
       const dateObj = new Date(t.date);
       const matchesMonth = typeof selectedMonth === 'number' ? dateObj.getMonth() === selectedMonth : true;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase());
-      const matchesDateRange = (!startDate || t.date >= startDate) && 
-                               (!endDate || t.date <= endDate);
-      return matchesMonth && matchesSearch && matchesDateRange;
+      return matchesMonth && matchesSearch;
     });
-  }, [ignoredTransactions, selectedMonth, search, startDate, endDate]);
+  }, [ignoredTransactions, selectedMonth, search]);
 
   const handleAdd = (data: Omit<Transaction, 'id'>) => {
     if (!db || !user) return;
@@ -260,8 +255,6 @@ export default function Home() {
     setSearch('');
     setCategoryFilter('all');
     setTypeFilter('all');
-    setStartDate('');
-    setEndDate('');
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -319,8 +312,7 @@ export default function Home() {
                       search={search} setSearch={setSearch} 
                       category={categoryFilter} setCategory={setCategoryFilter} 
                       type={typeFilter} setType={setTypeFilter} 
-                      startDate={startDate} setStartDate={setStartDate}
-                      endDate={endDate} setEndDate={setEndDate}
+                      sortOrder={sortOrder} setSortOrder={setSortOrder}
                       onClear={clearFilters} categories={categories}
                     />
                     {dataLoading ? (
