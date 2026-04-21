@@ -14,7 +14,8 @@ import {
   X, 
   ListOrdered,
   ChevronDown,
-  Search
+  Search,
+  Check
 } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -28,7 +29,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface AdjustmentItem {
@@ -53,6 +64,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
   const { user } = useUser();
   const db = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedForBase, setSelectedForBase] = useState<string[]>([]);
+  const [selectedForItems, setSelectedForItems] = useState<string[]>([]);
+  const [isBasePickerOpen, setIsBasePickerOpen] = useState(false);
+  const [isItemsPickerOpen, setIsItemsPickerOpen] = useState<string | null>(null); // Table ID
 
   const adjustmentRef = useMemoFirebase(() => {
     if (!db || !user || !yearMonth) return null;
@@ -111,6 +126,36 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     updateTable(tableId, { items: newItems });
   };
 
+  const handleBulkAddBase = (tableId: string) => {
+    const selectedTransactions = transactions.filter(t => selectedForBase.includes(t.id));
+    const total = selectedTransactions.reduce((acc, t) => acc + t.amount, 0);
+    const firstName = selectedTransactions[0]?.description || 'Soma de Lançamentos';
+    const name = selectedTransactions.length > 1 ? `Soma: ${firstName} +${selectedTransactions.length - 1}` : firstName;
+    
+    updateTable(tableId, { baseValue: total, name });
+    setSelectedForBase([]);
+    setIsBasePickerOpen(false);
+  };
+
+  const handleBulkAddItems = (tableId: string) => {
+    const table = tables.find(t => t.id === tableId);
+    if (!table) return;
+
+    const selectedTransactions = transactions.filter(t => selectedForItems.includes(t.id));
+    const newItems: AdjustmentItem[] = selectedTransactions.map(t => ({
+      name: t.description,
+      value: t.amount,
+      type: 'minus'
+    }));
+
+    // Filter out empty placeholder item if it exists
+    const existingItems = table.items.filter(item => item.name !== '' || item.value !== 0);
+    
+    updateTable(tableId, { items: [...existingItems, ...newItems] });
+    setSelectedForItems([]);
+    setIsItemsPickerOpen(null);
+  };
+
   if (isLoading) return null;
 
   return (
@@ -156,50 +201,56 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                   <div className="space-y-3 mb-6">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Base (Fatura / Inicial)</label>
                     <div className="flex items-center gap-2 bg-sky-50 p-3 rounded-lg border border-sky-100">
-                      <DropdownMenu onOpenChange={(open) => !open && setSearchTerm('')}>
-                        <DropdownMenuTrigger asChild>
+                      <Dialog open={isBasePickerOpen} onOpenChange={setIsBasePickerOpen}>
+                        <DialogTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-8 px-2 text-sky-700 hover:bg-sky-100 gap-2 shrink-0">
                             <ListOrdered className="h-4 w-4" />
                             <span>Escolher do Extrato</span>
                             <ChevronDown className="h-3 w-3 opacity-50" />
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-80" align="start">
-                          <DropdownMenuLabel>Selecione um lançamento</DropdownMenuLabel>
-                          <div className="px-2 pb-2">
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Escolher do Extrato</DialogTitle>
+                            <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
+                          </DialogHeader>
+                          <div className="py-4 space-y-4">
                             <div className="relative">
-                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input 
-                                placeholder="Filtrar por nome..." 
-                                value={searchTerm}
+                                placeholder="Pesquisar..." 
+                                value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="h-8 pl-8 text-xs bg-slate-50"
-                                onKeyDown={(e) => e.stopPropagation()}
+                                className="pl-9"
                               />
                             </div>
-                          </div>
-                          <DropdownMenuSeparator />
-                          <ScrollArea className="h-72">
-                            {filteredTransactions.length === 0 ? (
-                              <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma transação encontrada.</div>
-                            ) : (
-                              filteredTransactions.map((t) => (
-                                <DropdownMenuItem 
-                                  key={t.id} 
-                                  onClick={() => updateTable(table.id, { baseValue: t.amount, name: t.description })}
-                                  className="flex flex-col items-start gap-1 py-2 cursor-pointer"
-                                >
-                                  <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
-                                  <div className="flex justify-between w-full text-[10px] opacity-70">
-                                    <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
-                                    <span className="font-bold">{formatCurrency(t.amount)}</span>
+                            <ScrollArea className="h-64 border rounded-md p-2">
+                              {filteredTransactions.map((t) => (
+                                <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                  if (selectedForBase.includes(t.id)) {
+                                    setSelectedForBase(selectedForBase.filter(id => id !== t.id));
+                                  } else {
+                                    setSelectedForBase([...selectedForBase, t.id]);
+                                  }
+                                }}>
+                                  <Checkbox checked={selectedForBase.includes(t.id)} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold truncate">{t.description}</p>
+                                    <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
                                   </div>
-                                </DropdownMenuItem>
-                              ))
-                            )}
-                          </ScrollArea>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                                  <div className="text-xs font-black">{formatCurrency(t.amount)}</div>
+                                </div>
+                              ))}
+                            </ScrollArea>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => { setSelectedForBase([]); setIsBasePickerOpen(false); }}>Cancelar</Button>
+                            <Button disabled={selectedForBase.length === 0} onClick={() => handleBulkAddBase(table.id)}>
+                              Confirmar ({selectedForBase.length})
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
 
                       <div className="flex-1" />
 
@@ -218,7 +269,58 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ajustes (Somas e Deduções)</label>
+                       
+                       <Dialog open={isItemsPickerOpen === table.id} onOpenChange={(open) => !open && setIsItemsPickerOpen(null)}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-primary hover:bg-primary/5 gap-1" onClick={() => setIsItemsPickerOpen(table.id)}>
+                            <Plus className="h-3 w-3" />
+                            Importar do Extrato
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Importar Ajustes</DialogTitle>
+                            <DialogDescription>Selecione os lançamentos que deseja adicionar à tabela.</DialogDescription>
+                          </DialogHeader>
+                          <div className="py-4 space-y-4">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input 
+                                placeholder="Pesquisar..." 
+                                value={searchTerm} 
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9"
+                              />
+                            </div>
+                            <ScrollArea className="h-64 border rounded-md p-2">
+                              {filteredTransactions.map((t) => (
+                                <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                  if (selectedForItems.includes(t.id)) {
+                                    setSelectedForItems(selectedForItems.filter(id => id !== t.id));
+                                  } else {
+                                    setSelectedForItems([...selectedForItems, t.id]);
+                                  }
+                                }}>
+                                  <Checkbox checked={selectedForItems.includes(t.id)} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold truncate">{t.description}</p>
+                                    <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                  </div>
+                                  <div className="text-xs font-black">{formatCurrency(t.amount)}</div>
+                                </div>
+                              ))}
+                            </ScrollArea>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => { setSelectedForItems([]); setIsItemsPickerOpen(null); }}>Cancelar</Button>
+                            <Button disabled={selectedForItems.length === 0} onClick={() => handleBulkAddItems(table.id)}>
+                              Adicionar ({selectedForItems.length})
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
+
                     {table.items.map((item, idx) => (
                       <div key={idx} className="flex flex-col gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/30 group">
                         <div className="flex items-center gap-2">
@@ -311,7 +413,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                   </div>
 
                   <Button variant="ghost" size="sm" className="w-full mt-4 h-8 text-slate-400 hover:text-primary gap-1 border border-dashed border-slate-200" onClick={() => addItem(table.id)}>
-                    <Plus className="h-3 w-3" /> Novo Item de Ajuste
+                    <Plus className="h-3 w-3" /> Novo Item Manual
                   </Button>
 
                   <div className="mt-6 pt-4 border-t flex items-center justify-between">
