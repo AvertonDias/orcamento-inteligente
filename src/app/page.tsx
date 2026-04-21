@@ -11,6 +11,7 @@ import { AuthView } from '@/components/AuthView';
 import { MainHeader } from '@/components/MainHeader';
 import { MonthSelector } from '@/components/MonthSelector';
 import { SettingsView } from '@/components/SettingsView';
+import { MonthlyAdjustments } from '@/components/MonthlyAdjustments';
 import { Transaction, DEFAULT_CATEGORIES } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,6 +53,12 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
+
+  const yearMonthKey = useMemo(() => {
+    const year = new Date().getFullYear();
+    const month = typeof selectedMonth === 'number' ? (selectedMonth + 1).toString().padStart(2, '0') : '';
+    return month ? `${year}-${month}` : '';
+  }, [selectedMonth]);
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -278,10 +285,19 @@ export default function Home() {
             {selectedMonth === 'annual' ? (
               <AnnualSummaryView transactions={activeTransactions} />
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-12">
                 <DashboardSummary transactions={filteredActive} />
-                <div className="grid gap-8 lg:grid-cols-3">
+                
+                {/* Novas Calculadoras e Ajustes Mensais */}
+                {yearMonthKey && (
+                  <MonthlyAdjustments yearMonth={yearMonthKey} />
+                )}
+
+                <div className="grid gap-8 lg:grid-cols-3 pt-8 border-t">
                   <div className="lg:col-span-2 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h2 className="text-xl font-bold text-slate-800">Transações Detalhadas</h2>
+                    </div>
                     <TransactionFilters 
                       search={search} setSearch={setSearch} 
                       category={categoryFilter} setCategory={setCategoryFilter} 
@@ -298,7 +314,9 @@ export default function Home() {
                       />
                     )}
                   </div>
-                  <aside><FinanceChart transactions={filteredActive} /></aside>
+                  <aside>
+                    <FinanceChart transactions={filteredActive} />
+                  </aside>
                 </div>
 
                 {ignoredTransactions.length > 0 && filteredIgnored.length > 0 && (

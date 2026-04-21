@@ -1,17 +1,7 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * CORE SECURITY PHILOSOPHY:
-     * This ruleset implements a strict "User-Ownership" model. Access control is determined 
-     * primarily by the document's location within the hierarchical path.
-     *
-     * DATA STRUCTURE:
-     * All application data is segregated by user and nested under the /users/{userId} path. 
-     */
-
-    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -21,59 +11,27 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    // --- Collection Rules ---
-
     match /users/{userId} {
       allow get, list, create, update, delete: if isOwner(userId);
 
-      /**
-       * @description Manages financial accounts.
-       */
       match /contasFinanceiras/{contaId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.id == contaId;
-        allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
-      /**
-       * @description Manages custom transaction categories.
-       */
       match /categorias/{categoriaId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.id == categoriaId;
-        allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-        allow delete: if isExistingOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
-      /**
-       * @description Manages individual financial transactions.
-       * Suporta tanto 'transacoes' quanto 'transactions' para compatibilidade.
-       */
-      match /transacoes/{transacaoId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+      match /transactions/{transacaoId} {
+        allow read, write: if isOwner(userId);
       }
       
-      match /transactions/{transacaoId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+      match /adjustments/{adjustmentId} {
+        allow read, write: if isOwner(userId);
       }
 
-      /**
-       * @description Manages user settings.
-       */
       match /settings/{settingId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
     }
 

@@ -43,6 +43,34 @@
         "isIgnored": { "type": "boolean" }
       },
       "required": ["id", "descricao", "valor", "data", "tipo"]
+    },
+    "MonthlyAdjustment": {
+      "title": "MonthlyAdjustment",
+      "type": "object",
+      "description": "Tabelas de ajustes personalizados por mês (ex: divisões de cartão).",
+      "properties": {
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "baseValue": { "type": "number" },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "value": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -71,7 +99,15 @@
         "definition": {
           "entityName": "Transacao",
           "schema": { "$ref": "#/backend/entities/Transacao" },
-          "description": "Transações financeiras (usando nome em inglês conforme o código)."
+          "description": "Transações financeiras."
+        }
+      },
+      {
+        "path": "/users/{userId}/adjustments/{monthId}",
+        "definition": {
+          "entityName": "MonthlyAdjustment",
+          "schema": { "$ref": "#/backend/entities/MonthlyAdjustment" },
+          "description": "Ajustes e calculadoras personalizadas por mês."
         }
       },
       {
