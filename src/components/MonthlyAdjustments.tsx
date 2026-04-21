@@ -14,7 +14,9 @@ import {
   X, 
   Search,
   ChevronDown,
-  LayoutGrid
+  LayoutGrid,
+  FileText,
+  MousePointerClick
 } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -80,7 +82,6 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
 
   const { data: adjustmentData, isLoading } = useDoc(adjustmentRef);
   
-  // Migration logic for old data format
   const tables: AdjustmentTable[] = (adjustmentData?.tables || []).map((t: any) => ({
     ...t,
     baseValues: t.baseValues || [{ name: 'Valor Base', value: t.baseValue || 0 }],
@@ -114,7 +115,6 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     handleSave(tables.map(t => t.id === tableId ? { ...t, ...updates } : t));
   };
 
-  // Base Value Handlers
   const addBaseItem = (tableId: string) => {
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
@@ -147,7 +147,6 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
 
-    // Remove empty initial placeholder if it exists
     const existing = table.baseValues.filter(b => b.name !== 'Valor Base' || b.value !== 0);
     
     updateTable(tableId, { baseValues: [...existing, ...newBases] });
@@ -155,7 +154,6 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     setIsBasePickerOpen(null);
   };
 
-  // Adjustment Item Handlers
   const addItem = (tableId: string) => {
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
@@ -244,65 +242,8 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                 <CardContent className="pt-6 space-y-6 flex-1">
                   {/* Section: Base Values */}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valores Base (Faturas / Iniciais)</label>
-                      <Dialog open={isBasePickerOpen === table.id} onOpenChange={(open) => !open && setIsBasePickerOpen(null)}>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] font-bold text-sky-600 hover:bg-sky-50 gap-1 px-1" onClick={() => setIsBasePickerOpen(table.id)}>
-                            <Plus className="h-3 w-3" />
-                            Escolher do Extrato
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl max-w-[95vw]">
-                          <DialogHeader>
-                            <DialogTitle>Escolher do Extrato</DialogTitle>
-                            <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4 space-y-4">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input 
-                                placeholder="Pesquisar..." 
-                                value={searchTerm} 
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9 w-full"
-                              />
-                            </div>
-                            <ScrollArea className="h-[50vh] border rounded-md">
-                              <div className="divide-y divide-slate-100">
-                                {filteredTransactions.map((t) => (
-                                  <div 
-                                    key={t.id} 
-                                    className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
-                                    onClick={() => {
-                                      if (selectedForBase.includes(t.id)) {
-                                        setSelectedForBase(selectedForBase.filter(id => id !== t.id));
-                                      } else {
-                                        setSelectedForBase([...selectedForBase, t.id]);
-                                      }
-                                    }}
-                                  >
-                                    <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
-                                      <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                          </div>
-                          <DialogFooter className="flex gap-2 border-t pt-4">
-                            <Button variant="outline" className="flex-1" onClick={() => { setSelectedForBase([]); setIsBasePickerOpen(null); }}>Cancelar</Button>
-                            <Button className="flex-1" disabled={selectedForBase.length === 0} onClick={() => handleBulkAddBase(table.id)}>
-                              Confirmar ({selectedForBase.length})
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Valores Base (Faturas / Iniciais)</label>
+                    
                     <div className="space-y-2">
                       {table.baseValues.map((bv, idx) => (
                         <div key={idx} className="flex items-center gap-2 bg-sky-50/50 p-2 rounded-lg border border-sky-100/50 group">
@@ -332,14 +273,77 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                           </Button>
                         </div>
                       ))}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full h-7 text-[10px] font-bold text-sky-400 hover:text-sky-600 border border-dashed border-sky-200"
-                        onClick={() => addBaseItem(table.id)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Adicionar outro Valor Base
-                      </Button>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 text-[10px] font-bold text-sky-500 hover:text-sky-700 border border-dashed border-sky-200 gap-1.5"
+                          onClick={() => addBaseItem(table.id)}
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Adicionar Manual
+                        </Button>
+
+                        <Dialog open={isBasePickerOpen === table.id} onOpenChange={(open) => !open && setIsBasePickerOpen(null)}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 text-[10px] font-bold text-sky-600 hover:bg-sky-50 border border-dashed border-sky-200 gap-1.5"
+                              onClick={() => setIsBasePickerOpen(table.id)}
+                            >
+                              <MousePointerClick className="h-3.5 w-3.5" /> Escolher do Extrato
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-2xl max-w-[95vw]">
+                            <DialogHeader>
+                              <DialogTitle>Escolher do Extrato</DialogTitle>
+                              <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                  placeholder="Pesquisar..." 
+                                  value={searchTerm} 
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  className="pl-9 w-full"
+                                />
+                              </div>
+                              <ScrollArea className="h-[50vh] border rounded-md">
+                                <div className="divide-y divide-slate-100">
+                                  {filteredTransactions.map((t) => (
+                                    <div 
+                                      key={t.id} 
+                                      className="flex items-center space-x-3 p-3 hover:bg-slate-50 cursor-pointer" 
+                                      onClick={() => {
+                                        if (selectedForBase.includes(t.id)) {
+                                          setSelectedForBase(selectedForBase.filter(id => id !== t.id));
+                                        } else {
+                                          setSelectedForBase([...selectedForBase, t.id]);
+                                        }
+                                      }}
+                                    >
+                                      <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold leading-tight break-words pr-2">{t.description}</p>
+                                        <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                      </div>
+                                      <div className="text-sm font-black text-slate-700 whitespace-nowrap">{formatCurrency(t.amount)}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            <DialogFooter className="flex gap-2 border-t pt-4">
+                              <Button variant="outline" className="flex-1" onClick={() => { setSelectedForBase([]); setIsBasePickerOpen(null); }}>Cancelar</Button>
+                              <Button className="flex-1" disabled={selectedForBase.length === 0} onClick={() => handleBulkAddBase(table.id)}>
+                                Confirmar ({selectedForBase.length})
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </div>
 
