@@ -8,8 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { LayoutDashboard, LogIn, Loader2, AlertCircle } from 'lucide-react';
-import { Auth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { LayoutDashboard, LogIn, Loader2, AlertCircle, MailCheck } from 'lucide-react';
+import { 
+  Auth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail 
+} from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthViewProps {
   auth: Auth | null;
@@ -21,6 +29,8 @@ export function AuthView({ auth }: AuthViewProps) {
   const [password, setPassword] = useState('');
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+  const { toast } = useToast();
 
   const handleGoogleLogin = async () => {
     if (!auth) return;
@@ -41,12 +51,36 @@ export function AuthView({ auth }: AuthViewProps) {
     if (!auth) return;
     setIsAuthProcessing(true);
     setAuthError(null);
+    setResetSent(false);
     try {
       if (authMode === 'signup') {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
+    } catch (err: any) {
+      setAuthError(err.message);
+    } finally {
+      setIsAuthProcessing(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!auth) return;
+    if (!email) {
+      setAuthError("Por favor, insira seu e-mail primeiro para recuperar a senha.");
+      return;
+    }
+    
+    setIsAuthProcessing(true);
+    setAuthError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+      toast({
+        title: "E-mail enviado",
+        description: "Enviamos um link de redefinição para " + email
+      });
     } catch (err: any) {
       setAuthError(err.message);
     } finally {
@@ -71,6 +105,15 @@ export function AuthView({ auth }: AuthViewProps) {
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
+
+          {resetSent && (
+            <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
+              <MailCheck className="h-4 w-4 text-emerald-600" />
+              <AlertTitle>Sucesso</AlertTitle>
+              <AlertDescription>Link de recuperação enviado para seu e-mail.</AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -84,7 +127,19 @@ export function AuthView({ auth }: AuthViewProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                {authMode === 'login' && (
+                  <button 
+                    type="button" 
+                    onClick={handleForgotPassword}
+                    className="text-xs text-primary hover:underline font-medium"
+                    disabled={isAuthProcessing}
+                  >
+                    Esqueci a senha
+                  </button>
+                )}
+              </div>
               <Input 
                 id="password"
                 type="password" 
@@ -114,7 +169,11 @@ export function AuthView({ auth }: AuthViewProps) {
           </Button>
         </CardContent>
         <CardFooter>
-          <Button variant="link" className="w-full text-xs" onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}>
+          <Button variant="link" className="w-full text-xs" onClick={() => {
+            setAuthMode(authMode === 'login' ? 'signup' : 'login');
+            setAuthError(null);
+            setResetSent(false);
+          }}>
             {authMode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
           </Button>
         </CardFooter>
