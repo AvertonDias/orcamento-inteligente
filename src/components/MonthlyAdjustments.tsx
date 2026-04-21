@@ -1,12 +1,13 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Plus, 
+  Minus,
   Trash2, 
   Calculator, 
   Receipt, 
@@ -27,10 +28,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface AdjustmentItem {
   name: string;
   value: number;
+  type: 'plus' | 'minus';
 }
 
 interface AdjustmentTable {
@@ -67,7 +70,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
       id: Math.random().toString(36).substring(2, 9),
       name: 'Novo Cartão/Conta',
       baseValue: 0,
-      items: [{ name: '', value: 0 }]
+      items: [{ name: '', value: 0, type: 'minus' }]
     };
     handleSave([...tables, newTable]);
   };
@@ -83,7 +86,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
   const addItem = (tableId: string) => {
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
-    updateTable(tableId, { items: [...table.items, { name: '', value: 0 }] });
+    updateTable(tableId, { items: [...table.items, { name: '', value: 0, type: 'minus' }] });
   };
 
   const removeItem = (tableId: string, itemIndex: number) => {
@@ -118,7 +121,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
       </div>
 
       {tables.length === 0 ? (
-        <div className="text-center py-10 bg-white/40 border-2 border-dashed rounded-xl">
+        <div className="text-center py-20 bg-white/40 border-2 border-dashed rounded-xl">
           <Receipt className="h-10 w-10 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500">Nenhum ajuste personalizado neste mês.</p>
           <Button onClick={addTable} variant="link" className="mt-2">Clique aqui para criar uma tabela (ex: Cartão de Crédito)</Button>
@@ -126,8 +129,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {tables.map((table) => {
-            const itemsTotal = table.items.reduce((acc, item) => acc + (item.value || 0), 0);
-            const finalTotal = table.baseValue - itemsTotal;
+            const finalTotal = table.items.reduce((acc, item) => {
+              const val = item.value || 0;
+              return item.type === 'plus' ? acc + val : acc - val;
+            }, table.baseValue);
 
             return (
               <Card key={table.id} className="border-none shadow-lg overflow-hidden bg-white">
@@ -143,7 +148,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="space-y-3 mb-6">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Base (Fatura)</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Base (Fatura / Inicial)</label>
                     <div className="flex items-center gap-2 bg-sky-50 p-3 rounded-lg border border-sky-100">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -194,13 +199,24 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-1">
-                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Itens para Deduzir</label>
-                       <span className="text-[10px] font-bold text-rose-400">Total Deduções: {formatCurrency(itemsTotal)}</span>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ajustes (Somas e Deduções)</label>
                     </div>
                     {table.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-2 group">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn(
+                            "h-8 w-8 shrink-0", 
+                            item.type === 'plus' ? "text-emerald-500 bg-emerald-50" : "text-rose-500 bg-rose-50"
+                          )}
+                          onClick={() => updateItem(table.id, idx, { type: item.type === 'plus' ? 'minus' : 'plus' })}
+                        >
+                          {item.type === 'plus' ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                        </Button>
+
                         <Input 
-                          placeholder="Ex: Compra do João" 
+                          placeholder="Descrição do ajuste..." 
                           value={item.name} 
                           onChange={(e) => updateItem(table.id, idx, { name: e.target.value })}
                           className="flex-1 h-8 text-sm"
@@ -223,11 +239,11 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                   </div>
 
                   <Button variant="ghost" size="sm" className="w-full mt-2 h-8 text-slate-400 hover:text-primary gap-1" onClick={() => addItem(table.id)}>
-                    <Plus className="h-3 w-3" /> Adicionar Dedução
+                    <Plus className="h-3 w-3" /> Novo Item de Ajuste
                   </Button>
 
                   <div className="mt-6 pt-4 border-t flex items-center justify-between">
-                    <div className="text-xs text-slate-400 font-medium uppercase">Saldo Final (Seu Gasto)</div>
+                    <div className="text-xs text-slate-400 font-medium uppercase">Saldo Final Calculado</div>
                     <div className="text-xl font-black text-slate-900">
                       {formatCurrency(finalTotal)}
                     </div>

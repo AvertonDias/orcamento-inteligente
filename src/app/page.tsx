@@ -19,7 +19,8 @@ import {
   Loader2,
   EyeOff,
   Calculator,
-  ReceiptText
+  ReceiptText,
+  Settings
 } from 'lucide-react';
 import { 
   useUser, 
@@ -268,9 +269,14 @@ export default function Home() {
         onImport={handleImport} 
       />
 
+      <MonthSelector 
+        selectedMonth={selectedMonth} 
+        onSelect={setSelectedMonth} 
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1">
-        <div className="bg-white border-b sticky top-16 z-20">
-          <div className="max-w-7xl mx-auto px-4 pt-4">
+        <div className="bg-white border-b sticky top-[112px] z-20 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 py-3">
             <TabsList className="bg-slate-100 p-1">
               <TabsTrigger value="dashboard" className="px-6 gap-2">
                 <ReceiptText className="h-4 w-4" />
@@ -280,17 +286,15 @@ export default function Home() {
                 <Calculator className="h-4 w-4" />
                 Divisões / Ajustes
               </TabsTrigger>
-              <TabsTrigger value="settings" className="px-6">Configurações</TabsTrigger>
+              <TabsTrigger value="settings" className="px-6 gap-2">
+                <Settings className="h-4 w-4" />
+                Configurações
+              </TabsTrigger>
             </TabsList>
           </div>
         </div>
 
         <TabsContent value="dashboard" className="flex-1 flex flex-col m-0">
-          <MonthSelector 
-            selectedMonth={selectedMonth} 
-            onSelect={setSelectedMonth} 
-          />
-
           <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
             {selectedMonth === 'annual' ? (
               <AnnualSummaryView transactions={activeTransactions} />
@@ -342,10 +346,6 @@ export default function Home() {
         </TabsContent>
 
         <TabsContent value="adjustments" className="flex-1 flex flex-col m-0">
-          <MonthSelector 
-            selectedMonth={selectedMonth} 
-            onSelect={setSelectedMonth} 
-          />
           <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
             {selectedMonth === 'annual' ? (
               <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed">
