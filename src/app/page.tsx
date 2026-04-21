@@ -41,7 +41,8 @@ import {
   useFirestore, 
   useAuth, 
   useCollection,
-  useDoc
+  useDoc,
+  useMemoFirebase
 } from '@/firebase';
 import { 
   collection, 
@@ -55,7 +56,6 @@ import {
   writeBatch,
   setDoc
 } from 'firebase/firestore';
-import { useMemoFirebase } from '@/firebase/firestore/use-collection';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
@@ -77,7 +77,7 @@ const MONTHS = [
 ];
 
 export default function Home() {
-  const { user, loading: authLoading } = useUser();
+  const { user, isUserLoading: authLoading } = useUser();
   const db = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
@@ -100,21 +100,16 @@ export default function Home() {
   // Handle Redirect Result
   useEffect(() => {
     if (!auth) return;
-    setIsAuthProcessing(true);
     getRedirectResult(auth)
       .then((result) => {
-        setIsAuthProcessing(false);
         if (result) {
           toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
         }
       })
       .catch((err: any) => {
-        setIsAuthProcessing(false);
-        if (err.code === 'auth/api-key-not-valid') {
-          setAuthError("Chave de API inválida. Verifique sua configuração no console do Firebase.");
-        } else if (err.code === 'auth/unauthorized-domain') {
-          setAuthError("Este domínio não está autorizado no console do Firebase (Authentication > Settings > Authorized Domains).");
-        } else {
+        if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
+          setAuthError("Chave de API inválida ou domínio não autorizado. Verifique as configurações no Console do Firebase.");
+        } else if (err.code !== 'auth/popup-closed-by-user') {
           setAuthError(err.message);
         }
       });
@@ -128,10 +123,10 @@ export default function Home() {
     );
   }, [db, user]);
 
-  const { data: transactions = [], loading: dataLoading } = useCollection(transactionsQuery);
+  const { data: transactions = [], isLoading: dataLoading } = useCollection(transactionsQuery);
 
   // User Settings
-  const settingsRef = useMemo(() => {
+  const settingsRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'users', user.uid, 'settings', 'config');
   }, [db, user]);
@@ -142,8 +137,8 @@ export default function Home() {
     return settings?.categories || DEFAULT_CATEGORIES;
   }, [settings]);
 
-  const activeTransactions = useMemo(() => transactions.filter(t => !t.isIgnored), [transactions]);
-  const ignoredTransactions = useMemo(() => transactions.filter(t => t.isIgnored), [transactions]);
+  const activeTransactions = useMemo(() => (transactions || []).filter(t => !t.isIgnored), [transactions]);
+  const ignoredTransactions = useMemo(() => (transactions || []).filter(t => t.isIgnored), [transactions]);
 
   const filteredActive = useMemo(() => {
     return activeTransactions.filter((t) => {
@@ -251,7 +246,7 @@ export default function Home() {
 
   const handleIgnoreSimilar = async (description: string) => {
     if (!db || !user) return;
-    const similar = transactions.filter(t => t.description === description && !t.isIgnored);
+    const similar = (transactions || []).filter(t => t.description === description && !t.isIgnored);
     if (similar.length === 0) return;
 
     const batch = writeBatch(db);
@@ -319,6 +314,7 @@ export default function Home() {
             {authError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro de Autenticação</AlertTitle>
                 <AlertDescription>{authError}</AlertDescription>
               </Alert>
             )}
@@ -438,7 +434,7 @@ export default function Home() {
               <section className="pt-12 mt-12 border-t">
                 <div className="flex items-center gap-2 mb-6 text-slate-400">
                   <EyeOff className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Transações Ignoradas (Inúteis)</h2>
+                  <h2 className="text-lg font-semibold">Transações Ignoradas</h2>
                 </div>
                 <TransactionTable 
                   transactions={filteredIgnored} 
