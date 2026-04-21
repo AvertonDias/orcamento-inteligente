@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "ContaFinanceira": {
@@ -38,6 +39,7 @@
         "data": { "type": "string", "format": "date" },
         "tipo": { "type": "string" },
         "category": { "type": "string" },
+        "bank": { "type": "string", "enum": ["bb", "nubank", "manual"] },
         "isIgnored": { "type": "boolean" }
       },
       "required": ["id", "descricao", "valor", "data", "tipo"]

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Loader2 } from 'lucide-react';
-import { TransactionType } from '@/app/lib/types';
+import { TransactionType, BankType } from '@/app/lib/types';
 
 interface TransactionDialogProps {
   onAdd: (transaction: any) => void;
@@ -36,6 +37,7 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState('Outros');
   const [type, setType] = useState<TransactionType>('despesa');
+  const [bank, setBank] = useState<BankType>('manual');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,8 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
       amount: parseFloat(amount),
       date,
       category,
-      type
+      type,
+      bank
     });
 
     // Reset form
@@ -55,6 +58,7 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
     setDate(new Date().toISOString().split('T')[0]);
     setCategory('Outros');
     setType('despesa');
+    setBank('manual');
     
     setLoading(false);
     setOpen(false);
@@ -121,18 +125,31 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="category">
+              <Label htmlFor="bank">Banco / Conta</Label>
+              <Select value={bank} onValueChange={(val: BankType) => setBank(val)}>
+                <SelectTrigger id="bank">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="bb">Banco do Brasil</SelectItem>
+                  <SelectItem value="nubank">Nubank</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoria</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full">

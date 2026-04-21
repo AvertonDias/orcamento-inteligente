@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -29,9 +30,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Transaction } from '@/app/lib/types';
 import { formatCurrency, formatDate } from '@/app/lib/formatters';
-import { ArrowUpCircle, ArrowDownCircle, Trash2, Ban, History } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Trash2, Ban, History, Landmark, CreditCard, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -67,6 +69,25 @@ export function TransactionTable({
     setPendingCategoryUpdate({ id, description, category: newCategory });
   };
 
+  const getBankIcon = (bank?: string) => {
+    switch (bank) {
+      case 'bb':
+        return <Landmark className="h-3 w-3 text-primary" />;
+      case 'nubank':
+        return <CreditCard className="h-3 w-3 text-accent" />;
+      default:
+        return <User className="h-3 w-3 text-slate-400" />;
+    }
+  };
+
+  const getBankName = (bank?: string) => {
+    switch (bank) {
+      case 'bb': return 'BB';
+      case 'nubank': return 'Nubank';
+      default: return 'Manual';
+    }
+  };
+
   return (
     <>
       <div className="rounded-md border bg-white shadow-sm overflow-hidden">
@@ -75,6 +96,7 @@ export function TransactionTable({
             <TableRow>
               <TableHead className="w-[120px]">Data</TableHead>
               <TableHead>Descrição</TableHead>
+              <TableHead className="w-[120px]">Banco</TableHead>
               <TableHead className="w-[180px]">Categoria</TableHead>
               <TableHead className="w-[120px]">Valor</TableHead>
               <TableHead className="w-[120px] text-right">Ações</TableHead>
@@ -100,6 +122,21 @@ export function TransactionTable({
                       disabled={isIgnoredList}
                     />
                   </div>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 cursor-default">
+                          {getBankIcon(t.bank)}
+                          <span className="text-xs font-medium text-muted-foreground uppercase">{getBankName(t.bank)}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Conta: {getBankName(t.bank)}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>
                   <Select

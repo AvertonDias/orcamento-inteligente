@@ -4,7 +4,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CreditCard, Landmark } from 'lucide-react';
-import { Transaction, TransactionType } from '@/app/lib/types';
+import { Transaction, TransactionType, BankType } from '@/app/lib/types';
 import { suggestTransactionCategory } from '@/ai/flows/sugestao-categoria-transacao';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,11 +12,9 @@ interface CSVImporterProps {
   onImport: (transactions: Transaction[]) => void;
 }
 
-type BankMode = 'bb' | 'nubank';
-
 export function CSVImporter({ onImport }: CSVImporterProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeBank, setActiveBank] = useState<BankMode | null>(null);
+  const [activeBank, setActiveBank] = useState<BankType | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -51,7 +49,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return dateStr;
   };
 
-  const handleButtonClick = (bank: BankMode) => {
+  const handleButtonClick = (bank: BankType) => {
     setActiveBank(bank);
     fileInputRef.current?.click();
   };
@@ -133,7 +131,8 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             description: fullDescription,
             amount: Math.abs(amount),
             category,
-            type
+            type,
+            bank: activeBank
           });
         }
 

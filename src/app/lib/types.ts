@@ -1,5 +1,6 @@
 
 export type TransactionType = 'receita' | 'despesa';
+export type BankType = 'bb' | 'nubank' | 'manual';
 
 export interface Transaction {
   id: string;
@@ -8,6 +9,7 @@ export interface Transaction {
   amount: number;
   category: string;
   type: TransactionType;
+  bank?: BankType;
   isIgnored?: boolean;
 }
 
