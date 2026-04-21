@@ -13,13 +13,9 @@ import { MonthSelector } from '@/components/MonthSelector';
 import { SettingsView } from '@/components/SettingsView';
 import { Transaction, DEFAULT_CATEGORIES } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  List, 
   Loader2,
-  BarChart3,
-  EyeOff,
-  Settings as SettingsIcon
+  EyeOff
 } from 'lucide-react';
 import { 
   useUser, 
@@ -54,11 +50,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
-
-  useEffect(() => {
-    setSelectedMonth(new Date().getMonth());
-  }, []);
+  const [selectedMonth, setSelectedMonth] = useState<number | 'annual' | 'settings'>(new Date().getMonth());
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -91,7 +83,7 @@ export default function Home() {
   const filteredActive = useMemo(() => {
     return activeTransactions.filter((t) => {
       const dateObj = new Date(t.date);
-      const matchesMonth = selectedMonth === 'all' || dateObj.getMonth() === selectedMonth;
+      const matchesMonth = typeof selectedMonth === 'number' && dateObj.getMonth() === selectedMonth;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase()) || 
                             t.category.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
@@ -103,7 +95,7 @@ export default function Home() {
   const filteredIgnored = useMemo(() => {
     return ignoredTransactions.filter((t) => {
       const dateObj = new Date(t.date);
-      const matchesMonth = selectedMonth === 'all' || dateObj.getMonth() === selectedMonth;
+      const matchesMonth = typeof selectedMonth === 'number' && dateObj.getMonth() === selectedMonth;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase());
       return matchesMonth && matchesSearch;
     });
@@ -204,13 +196,11 @@ export default function Home() {
   const handleIgnoreSimilar = async (description: string) => {
     if (!db || !user || !settingsRef) return;
     
-    // 1. Persistir nas configurações para futuras importações
     if (!ignoredDescriptions.includes(description)) {
       const updated = [...ignoredDescriptions, description];
       setDoc(settingsRef, { ignoredDescriptions: updated }, { merge: true });
     }
 
-    // 2. Atualizar transações existentes
     const similar = transactions.filter(t => t.description === description && !t.isIgnored);
     if (similar.length === 0) return;
 
@@ -252,7 +242,6 @@ export default function Home() {
     setSearch('');
     setCategoryFilter('all');
     setTypeFilter('all');
-    setSelectedMonth('all');
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -274,14 +263,18 @@ export default function Home() {
       />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
-        <Tabs defaultValue="dashboard">
-          <TabsList className="mb-6">
-            <TabsTrigger value="dashboard"><List className="h-4 w-4 mr-2" />Lançamentos</TabsTrigger>
-            <TabsTrigger value="annual"><BarChart3 className="h-4 w-4 mr-2" />Resumo Anual</TabsTrigger>
-            <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Configurações</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-8">
+        {selectedMonth === 'annual' ? (
+          <AnnualSummaryView transactions={activeTransactions} />
+        ) : selectedMonth === 'settings' ? (
+          <SettingsView 
+            user={user} 
+            categories={categories} 
+            onAddCategory={handleAddCategory} 
+            onRemoveCategory={handleRemoveCategory} 
+            onResetCategories={handleResetCategories} 
+          />
+        ) : (
+          <div className="space-y-8">
             <DashboardSummary transactions={filteredActive} />
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
@@ -304,11 +297,11 @@ export default function Home() {
               <aside><FinanceChart transactions={filteredActive} /></aside>
             </div>
 
-            {ignoredTransactions.length > 0 && (
+            {ignoredTransactions.length > 0 && filteredIgnored.length > 0 && (
               <section className="pt-12 mt-12 border-t">
                 <div className="flex items-center gap-2 mb-6 text-slate-400">
                   <EyeOff className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Transações Ignoradas</h2>
+                  <h2 className="text-lg font-semibold">Transações Ignoradas (Mês Selecionado)</h2>
                 </div>
                 <TransactionTable 
                   transactions={filteredIgnored} onUpdate={handleUpdate} onDelete={handleDelete}
@@ -316,22 +309,8 @@ export default function Home() {
                 />
               </section>
             )}
-          </TabsContent>
-
-          <TabsContent value="annual">
-            <AnnualSummaryView transactions={activeTransactions} />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <SettingsView 
-              user={user} 
-              categories={categories} 
-              onAddCategory={handleAddCategory} 
-              onRemoveCategory={handleRemoveCategory} 
-              onResetCategories={handleResetCategories} 
-            />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </main>
       <Toaster />
     </div>
