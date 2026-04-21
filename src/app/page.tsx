@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -10,19 +11,24 @@ import { FinanceChart } from '@/components/FinanceChart';
 import { AnnualSummaryView } from '@/components/AnnualSummaryView';
 import { Transaction } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/Tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   PieChart, 
   List, 
   LayoutDashboard, 
-  Settings, 
   LogOut,
   Loader2,
   Calendar as CalendarIcon,
-  LogIn
+  LogIn,
+  Mail,
+  Lock,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   useUser, 
   useFirestore, 
@@ -39,10 +45,17 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/firestore/use-collection';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { useToast } from '@/hooks/use-toast';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -53,11 +66,18 @@ export default function Home() {
   const { user, loading: authLoading } = useUser();
   const db = useFirestore();
   const auth = useAuth();
+  const { toast } = useToast();
   
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
+
+  // Auth States
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isAuthProcessing, setIsAuthProcessing] = useState(false);
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -81,10 +101,42 @@ export default function Home() {
     });
   }, [transactions, selectedMonth, search, categoryFilter, typeFilter]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     if (!auth) return;
+    setIsAuthProcessing(true);
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(err => console.error(err));
+    signInWithPopup(auth, provider)
+      .catch(err => {
+        toast({
+          variant: "destructive",
+          title: "Erro na autenticação",
+          description: "Não foi possível entrar com Google. Verifique sua chave de API."
+        });
+      })
+      .finally(() => setIsAuthProcessing(false));
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth) return;
+    setIsAuthProcessing(true);
+
+    try {
+      if (authMode === 'signup') {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast({ title: "Conta criada!", description: "Bem-vindo ao Orçamento Inteligente." });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro na autenticação",
+        description: err.message || "E-mail ou senha inválidos."
+      });
+    } finally {
+      setIsAuthProcessing(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -175,19 +227,95 @@ export default function Home() {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center space-y-6">
-          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-slate-900">Bem-vindo ao Orçamento Inteligente</h1>
-            <p className="text-slate-500">Sincronize seus dados bancários e tenha uma visão clara das suas finanças.</p>
-          </div>
-          <Button onClick={handleLogin} className="w-full h-12 text-lg gap-2">
-            <LogIn className="h-5 w-5" />
-            Entrar com Google
-          </Button>
-        </div>
+        <Card className="max-w-md w-full shadow-xl border-none">
+          <CardHeader className="text-center space-y-4">
+            <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
+              <LayoutDashboard className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-bold">Orçamento Inteligente</CardTitle>
+              <CardDescription>Gerencie suas finanças com facilidade e IA.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="voce@exemplo.com" 
+                    className="pl-9" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="••••••••" 
+                    className="pl-9" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isAuthProcessing}>
+                {isAuthProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
+                {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">Ou continue com</span>
+              </div>
+            </div>
+
+            <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={isAuthProcessing}>
+              <svg className="h-4 w-4" viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              Google
+            </Button>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="link" 
+              className="w-full text-slate-500" 
+              onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+            >
+              {authMode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
