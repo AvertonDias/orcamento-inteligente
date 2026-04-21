@@ -19,13 +19,12 @@ export function initializeFirebase(): {
     return { firebaseApp: null, firestore: null, auth: null };
   }
 
-  // Verifica se a API Key existe antes de tentar inicializar
-  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "") {
-    console.warn("Firebase: API Key não configurada. Verifique suas variáveis de ambiente.");
-    return { firebaseApp: null, firestore: null, auth: null };
-  }
-
   try {
+    // Se não houver API Key, retornamos null mas permitimos que o app carregue
+    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "") {
+      return { firebaseApp: null, firestore: null, auth: null };
+    }
+
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     const firestore = getFirestore(firebaseApp);
     const auth = getAuth(firebaseApp);
