@@ -122,11 +122,12 @@ export function AuthView({ auth }: AuthViewProps) {
     setIsAuthProcessing(true);
     setAuthError(null);
     try {
+      // Nota: Firebase pode retornar sucesso mesmo se o usuário não existir por segurança.
       await sendPasswordResetEmail(auth, email);
       setResetSent(true);
       toast({
-        title: "E-mail enviado!",
-        description: `Verifique a caixa de entrada de ${email}.`
+        title: "Solicitação enviada",
+        description: `Se o e-mail estiver cadastrado, o link chegará em breve.`
       });
     } catch (err: any) {
       setAuthError(getFriendlyErrorMessage(err.code));
@@ -156,10 +157,17 @@ export function AuthView({ auth }: AuthViewProps) {
           {resetSent && (
             <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
               <MailCheck className="h-4 w-4 text-emerald-600" />
-              <AlertTitle>E-mail de recuperação enviado!</AlertTitle>
-              <AlertDescription className="text-xs">
-                Verifique sua caixa de entrada e **principalmente sua pasta de SPAM**. 
-                O link foi enviado para: <strong>{email}</strong>
+              <AlertTitle>Solicitação processada!</AlertTitle>
+              <AlertDescription className="text-xs space-y-2">
+                <p>Se a conta <strong>{email}</strong> existe, o link foi enviado.</p>
+                <div className="bg-white/50 p-2 rounded border border-emerald-100 mt-2">
+                  <p className="font-bold">Ainda não recebeu?</p>
+                  <ul className="list-disc ml-4 mt-1 space-y-1">
+                    <li>Confira a pasta de <strong>SPAM</strong> ou <strong>Lixo Eletrônico</strong>.</li>
+                    <li>Verifique se o e-mail foi digitado corretamente.</li>
+                    <li>Certifique-se de que você já criou uma conta com este e-mail específico.</li>
+                  </ul>
+                </div>
               </AlertDescription>
             </Alert>
           )}
