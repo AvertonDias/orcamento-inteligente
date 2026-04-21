@@ -123,7 +123,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
@@ -135,11 +136,11 @@
           "schema": {
             "$ref": "#/backend/entities/ContaFinanceira"
           },
-          "description": "Coleção que armazena as contas financeiras (bancárias ou de cartão de crédito) cadastradas por um usuário específico. A propriedade é definida pelo 'userId' no caminho, garantindo privacidade e autorização independente.",
+          "description": "Coleção que armazena as contas financeiras cadastradas por um usuário específico.",
           "params": [
             {
               "name": "userId",
-              "description": "O identificador único do usuário proprietário desta conta financeira."
+              "description": "O identificador único do usuário proprietário."
             },
             {
               "name": "contaFinanceiraId",
@@ -155,11 +156,11 @@
           "schema": {
             "$ref": "#/backend/entities/Categoria"
           },
-          "description": "Coleção que armazena as categorias personalizadas criadas por um usuário específico para classificar suas transações. A propriedade é definida pelo 'userId' no caminho, garantindo privacidade e autorização independente.",
+          "description": "Coleção que armazena as categorias personalizadas criadas por um usuário.",
           "params": [
             {
               "name": "userId",
-              "description": "O identificador único do usuário proprietário desta categoria."
+              "description": "O identificador único do usuário proprietário."
             },
             {
               "name": "categoriaId",
@@ -175,11 +176,11 @@
           "schema": {
             "$ref": "#/backend/entities/Transacao"
           },
-          "description": "Coleção que armazena todas as transações financeiras (receitas e despesas) pertencentes a um usuário específico. Inclui referências a 'categoriaId' e 'contaFinanceiraId' do mesmo usuário. A propriedade é definida pelo 'userId' no caminho, garantindo privacidade e autorização independente.",
+          "description": "Coleção que armazena todas as transações financeiras pertencentes a um usuário.",
           "params": [
             {
               "name": "userId",
-              "description": "O identificador único do usuário proprietário desta transação."
+              "description": "O identificador único do usuário proprietário."
             },
             {
               "name": "transacaoId",
@@ -187,8 +188,36 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/settings/{settingId}",
+        "definition": {
+          "entityName": "UserSettings",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "Armazena configurações personalizadas do usuário, como a lista de categorias editáveis.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "O identificador único do usuário."
+            },
+            {
+              "name": "settingId",
+              "description": "O identificador do documento de configuração (ex: 'config')."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "A estrutura de dados para o aplicativo 'Orçamento Inteligente' foi projetada seguindo rigorosamente os princípios de segurança, escalabilidade e depurabilidade do Firestore. A estratégia central é a **Autorização Independente** e a **Segregação Estrutural**, garantindo que as regras de segurança sejam simples, robustas e fáceis de depurar.\n\n**Como a estrutura atinge a Autorização Independente:**\nTodos os dados são intrinsecamente privados para cada usuário. Optamos por uma modelagem de acesso baseada em caminho hierárquico para dados de propriedade do usuário. Todas as coleções principais (`contasFinanceiras`, `categorias`, `transacoes`) são aninhadas sob um documento `user` identificado pelo `userId` autenticado. Por exemplo, `/users/{userId}/contasFinanceiras/{contaFinanceiraId}`. Essa abordagem significa que o ID do proprietário (`userId`) já está presente no caminho do documento.\n\nIsto elimina completamente a necessidade de chamadas `get()` nas regras de segurança do Firestore para verificar a propriedade ou permissões. As regras podem simplesmente comparar `request.auth.uid` com o `userId` presente no caminho do documento, tornando as operações atômicas (como transações e operações em lote) mais seguras e previsíveis. Não há dependências de dados pai para autorização, aderindo ao princípio CRÍTICO de Autorização Independente.\n\n**Como a estrutura suporta QAPs (Queries Are Not Filters):**\nA **Segregação Estrutural** é fundamental aqui. Todas as coleções são projetadas para terem uma postura de segurança homogênea: qualquer documento dentro de `/users/{userId}/...` é de propriedade exclusiva e acessível apenas pelo `userId` correspondente. Não misturamos dados públicos e privados, nem dados de diferentes usuários dentro da mesma coleção. Por exemplo, as transações de um usuário estão em `/users/{userId}/transacoes` e não em uma coleção global de `transacoes` onde filtros de segurança seriam necessários.\n\nIsso significa que as operações de `list` (consultas) naturalmente respeitam as permissões. Quando um usuário solicita uma lista de suas `transacoes`, a consulta é feita em `/users/{request.auth.uid}/transacoes`, e as regras de segurança garantem que apenas os documentos desse caminho específico possam ser lidos. Não há risco de um usuário tentar 'filtrar' documentos de outro usuário, pois a estrutura já segrega os dados, tornando as consultas por `list` inerentemente seguras e performáticas, sem a necessidade de o Firestore atuar como um filtro de segurança pós-consulta."
+    "reasoning": "A estrutura foi atualizada para incluir a subcoleção 'settings', permitindo que o usuário armazene e gerencie preferências globais como a lista de categorias personalizadas de forma segura e privada."
   }
 }
