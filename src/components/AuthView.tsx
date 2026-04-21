@@ -43,13 +43,31 @@ export function AuthView({ auth }: AuthViewProps) {
   const [resetSent, setResetSent] = useState(false);
   const { toast } = useToast();
 
-  // Limpa erros ao trocar de modo (Login/Cadastro)
   useEffect(() => {
     setAuthError(null);
     setResetSent(false);
     setPassword('');
     setConfirmPassword('');
   }, [authMode]);
+
+  const getFriendlyErrorMessage = (code: string) => {
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+        return 'E-mail ou senha incorretos.';
+      case 'auth/email-already-in-use':
+        return 'Este e-mail já está sendo utilizado por outra conta.';
+      case 'auth/weak-password':
+        return 'A senha deve ter pelo menos 6 caracteres.';
+      case 'auth/invalid-email':
+        return 'Formato de e-mail inválido.';
+      case 'auth/popup-closed-by-user':
+        return 'A janela de login do Google foi fechada antes de concluir.';
+      default:
+        return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
+    }
+  };
 
   const handleGoogleLogin = async () => {
     if (!auth) return;
@@ -59,7 +77,7 @@ export function AuthView({ auth }: AuthViewProps) {
     try {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setAuthError(err.message);
+      setAuthError(getFriendlyErrorMessage(err.code));
     } finally {
       setIsAuthProcessing(false);
     }
@@ -70,7 +88,7 @@ export function AuthView({ auth }: AuthViewProps) {
     if (!auth) return;
 
     if (authMode === 'signup' && password !== confirmPassword) {
-      setAuthError("As senhas não coincidem.");
+      setAuthError("As senhas digitadas não são iguais.");
       return;
     }
 
@@ -84,7 +102,7 @@ export function AuthView({ auth }: AuthViewProps) {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
-      setAuthError(err.message || "Erro ao autenticar. Verifique seus dados.");
+      setAuthError(getFriendlyErrorMessage(err.code));
     } finally {
       setIsAuthProcessing(false);
     }
@@ -95,7 +113,7 @@ export function AuthView({ auth }: AuthViewProps) {
     if (!auth) return;
     
     if (!email) {
-      setAuthError("Por favor, insira seu e-mail primeiro para recuperar a senha.");
+      setAuthError("Digite seu e-mail para receber o link de recuperação.");
       return;
     }
     
@@ -105,11 +123,11 @@ export function AuthView({ auth }: AuthViewProps) {
       await sendPasswordResetEmail(auth, email);
       setResetSent(true);
       toast({
-        title: "E-mail enviado",
-        description: "Enviamos um link de redefinição para " + email
+        title: "E-mail de recuperação enviado",
+        description: "Verifique sua caixa de entrada e spam."
       });
     } catch (err: any) {
-      setAuthError(err.message);
+      setAuthError(getFriendlyErrorMessage(err.code));
     } finally {
       setIsAuthProcessing(false);
     }
@@ -128,7 +146,7 @@ export function AuthView({ auth }: AuthViewProps) {
           {authError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Erro</AlertTitle>
+              <AlertTitle>Atenção</AlertTitle>
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
@@ -137,7 +155,7 @@ export function AuthView({ auth }: AuthViewProps) {
             <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
               <MailCheck className="h-4 w-4 text-emerald-600" />
               <AlertTitle>Sucesso</AlertTitle>
-              <AlertDescription>Link de recuperação enviado para seu e-mail.</AlertDescription>
+              <AlertDescription>Link de recuperação enviado para {email}.</AlertDescription>
             </Alert>
           )}
 
@@ -147,7 +165,7 @@ export function AuthView({ auth }: AuthViewProps) {
               <Input 
                 id="email"
                 type="email" 
-                autoComplete="email"
+                placeholder="seu@email.com"
                 value={email} 
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -175,7 +193,6 @@ export function AuthView({ auth }: AuthViewProps) {
                 <Input 
                   id="password"
                   type={showPassword ? "text" : "password"} 
-                  autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                   value={password} 
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -201,7 +218,6 @@ export function AuthView({ auth }: AuthViewProps) {
                   <Input 
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"} 
-                    autoComplete="new-password"
                     value={confirmPassword} 
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);
@@ -229,7 +245,9 @@ export function AuthView({ auth }: AuthViewProps) {
 
           <div className="relative py-2">
             <div className="absolute inset-0 flex items-center"><Separator /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Ou continue com</span></div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">Ou continue com</span>
+            </div>
           </div>
 
           <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={isAuthProcessing}>
