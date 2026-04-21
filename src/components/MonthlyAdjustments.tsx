@@ -209,12 +209,12 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             <ChevronDown className="h-3 w-3 opacity-50" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md overflow-hidden">
+                        <DialogContent className="sm:max-w-2xl max-w-[95vw]">
                           <DialogHeader>
                             <DialogTitle>Escolher do Extrato</DialogTitle>
                             <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
                           </DialogHeader>
-                          <div className="py-4 space-y-4 max-w-full">
+                          <div className="py-4 space-y-4">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input 
@@ -224,10 +224,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                 className="pl-9 w-full"
                               />
                             </div>
-                            <ScrollArea className="h-64 border rounded-md p-2 w-full">
+                            <ScrollArea className="h-[50vh] border rounded-md p-2">
                               <div className="space-y-1">
                                 {filteredTransactions.map((t) => (
-                                  <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                  <div key={t.id} className="flex items-center space-x-3 p-3 hover:bg-slate-50 rounded-md cursor-pointer border-b last:border-0 border-slate-100" onClick={() => {
                                     if (selectedForBase.includes(t.id)) {
                                       setSelectedForBase(selectedForBase.filter(id => id !== t.id));
                                     } else {
@@ -235,11 +235,11 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                     }
                                   }}>
                                     <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-bold truncate">{t.description}</p>
+                                    <div className="flex-1 min-w-0 pr-2">
+                                      <p className="text-sm font-bold leading-tight break-words">{t.description}</p>
                                       <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
                                     </div>
-                                    <div className="text-xs font-black shrink-0">{formatCurrency(t.amount)}</div>
+                                    <div className="text-sm font-black shrink-0">{formatCurrency(t.amount)}</div>
                                   </div>
                                 ))}
                               </div>
@@ -279,12 +279,12 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             Importar do Extrato
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md overflow-hidden">
+                        <DialogContent className="sm:max-w-2xl max-w-[95vw]">
                           <DialogHeader>
                             <DialogTitle>Importar Ajustes</DialogTitle>
                             <DialogDescription>Selecione os lançamentos que deseja adicionar à tabela.</DialogDescription>
                           </DialogHeader>
-                          <div className="py-4 space-y-4 max-w-full">
+                          <div className="py-4 space-y-4">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input 
@@ -294,10 +294,10 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                 className="pl-9 w-full"
                               />
                             </div>
-                            <ScrollArea className="h-64 border rounded-md p-2 w-full">
+                            <ScrollArea className="h-[50vh] border rounded-md p-2">
                               <div className="space-y-1">
                                 {filteredTransactions.map((t) => (
-                                  <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                  <div key={t.id} className="flex items-center space-x-3 p-3 hover:bg-slate-50 rounded-md cursor-pointer border-b last:border-0 border-slate-100" onClick={() => {
                                     if (selectedForItems.includes(t.id)) {
                                       setSelectedForItems(selectedForItems.filter(id => id !== t.id));
                                     } else {
@@ -305,11 +305,11 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                     }
                                   }}>
                                     <Checkbox checked={selectedForItems.includes(t.id)} onCheckedChange={() => {}} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-bold truncate">{t.description}</p>
+                                    <div className="flex-1 min-w-0 pr-2">
+                                      <p className="text-sm font-bold leading-tight break-words">{t.description}</p>
                                       <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
                                     </div>
-                                    <div className="text-xs font-black shrink-0">{formatCurrency(t.amount)}</div>
+                                    <div className="text-sm font-black shrink-0">{formatCurrency(t.amount)}</div>
                                   </div>
                                 ))}
                               </div>
@@ -379,7 +379,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                                         onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount })}
                                         className="flex flex-col items-start gap-1 py-2 cursor-pointer"
                                       >
-                                        <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
+                                        <span className="font-semibold text-xs leading-tight">{t.description}</span>
                                         <div className="flex justify-between w-full text-[10px] opacity-70">
                                           <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
                                           <span className="font-bold">{formatCurrency(t.amount)}</span>
