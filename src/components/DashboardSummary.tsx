@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { Transaction } from '@/app/lib/types';
 
@@ -38,7 +38,7 @@ export function DashboardSummary({ transactions }: DashboardSummaryProps) {
       bg: 'bg-rose-50'
     },
     {
-      title: 'Saldo Atual',
+      title: 'Saldo',
       value: balance,
       icon: Wallet,
       color: balance >= 0 ? 'text-blue-500' : 'text-rose-600',
@@ -47,22 +47,19 @@ export function DashboardSummary({ transactions }: DashboardSummaryProps) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {stats.map((stat, idx) => (
-        <Card key={idx} className="overflow-hidden border-none shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            <div className={`p-2 rounded-full ${stat.bg}`}>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+        <Card key={idx} className="overflow-hidden border-none shadow-sm sm:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-500">{stat.title}</CardTitle>
+            <div className={`p-1.5 sm:p-2 rounded-full ${stat.bg}`}>
+              <stat.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${stat.color}`} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${stat.color}`}>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-xl sm:text-2xl font-bold ${stat.color} truncate`}>
               {formatCurrency(stat.value)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Refletindo o total das transações filtradas
-            </p>
           </CardContent>
         </Card>
       ))}

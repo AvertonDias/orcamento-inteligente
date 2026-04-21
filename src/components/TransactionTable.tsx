@@ -32,10 +32,17 @@ import {
   User,
   Calendar,
   Tag,
-  Notebook
+  Notebook,
+  MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -62,7 +69,7 @@ export function TransactionTable({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-lg bg-white/50">
         <p className="text-muted-foreground mb-2 font-medium">Nenhuma transação encontrada</p>
-        <p className="text-sm text-muted-foreground">Importe um arquivo CSV ou adicione manualmente para começar.</p>
+        <p className="text-sm text-muted-foreground">Importe um arquivo CSV ou adicione manualmente.</p>
       </div>
     );
   }
@@ -94,17 +101,17 @@ export function TransactionTable({
     <>
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="bg-slate-50/80 px-4 py-2 border-b text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
-          <span className="flex-1">Detalhes da Transação</span>
-          <span className="w-[120px] text-right">Valor</span>
+          <span className="flex-1">Lançamento</span>
+          <span className="w-[80px] sm:w-[120px] text-right">Valor</span>
         </div>
 
         <div className="divide-y divide-slate-100">
           {transactions.map((t) => (
             <div 
               key={t.id} 
-              className={`p-4 hover:bg-slate-50/50 transition-colors group relative ${t.isIgnored ? 'opacity-60 grayscale-[0.5]' : ''}`}
+              className={`p-3 sm:p-4 hover:bg-slate-50/50 transition-colors group relative ${t.isIgnored ? 'opacity-60 grayscale-[0.5]' : ''}`}
             >
-              <div className="flex gap-4 items-start">
+              <div className="flex gap-3 sm:gap-4 items-start">
                 <div className="mt-1 shrink-0">
                   {t.type === 'receita' ? (
                     <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
@@ -113,12 +120,12 @@ export function TransactionTable({
                   )}
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="w-full">
                     <textarea
                       value={t.description}
                       onChange={(e) => onUpdate(t.id, { description: e.target.value })}
-                      className="w-full border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-base overflow-hidden resize-none min-h-[1.5em]"
+                      className="w-full border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-sm sm:text-base overflow-hidden resize-none min-h-[1.5em]"
                       disabled={isIgnoredList}
                       rows={1}
                       onInput={(e) => {
@@ -129,17 +136,13 @@ export function TransactionTable({
                     />
                   </div>
 
-                  {/* Campo Observações */}
-                  <div className="w-full">
-                    <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-                      <Notebook className="h-3 w-3" />
-                      <span className="text-[10px] font-bold uppercase tracking-tight">Observações</span>
-                    </div>
+                  {/* Campo Observações - Menor no mobile */}
+                  <div className="w-full group/obs">
                     <textarea
                       value={t.observations || ''}
-                      placeholder="Adicione uma nota..."
+                      placeholder="Obs..."
                       onChange={(e) => onUpdate(t.id, { observations: e.target.value })}
-                      className="w-full border-none bg-transparent h-auto p-0 text-sm text-slate-500 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all italic overflow-hidden resize-none min-h-[1.5em]"
+                      className="w-full border-none bg-transparent h-auto p-0 text-[11px] sm:text-sm text-slate-400 group-hover/obs:text-slate-500 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all italic overflow-hidden resize-none min-h-[1.2em]"
                       disabled={isIgnoredList}
                       rows={1}
                       onInput={(e) => {
@@ -150,26 +153,26 @@ export function TransactionTable({
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 pt-1">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Calendar className="h-3.5 w-3.5" />
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] sm:text-xs text-slate-500 pt-0.5">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Calendar className="h-3 w-3" />
                       <span>{formatDate(t.date)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 px-2 py-0.5 rounded-full">
+                    <div className="flex items-center gap-1 shrink-0 bg-slate-100 px-1.5 py-0.5 rounded-full">
                       {getBankIcon(t.bank)}
                       <span className="font-medium">{getBankName(t.bank)}</span>
                     </div>
 
-                    <div className="flex items-center gap-1 min-w-[140px]">
-                      <Tag className="h-3.5 w-3.5 shrink-0" />
+                    <div className="flex items-center gap-1 min-w-[100px] sm:min-w-[140px]">
+                      <Tag className="h-3 w-3 shrink-0" />
                       <Select
                         value={t.category}
                         onValueChange={(val) => handleCategorySelection(t.id, t.description, val)}
                         disabled={isIgnoredList}
                       >
-                        <SelectTrigger className="h-6 border-none bg-transparent hover:bg-slate-100 focus:ring-0 shadow-none text-xs font-medium px-1">
-                          <SelectValue placeholder="Categoria" />
+                        <SelectTrigger className="h-5 border-none bg-transparent hover:bg-slate-100 focus:ring-0 shadow-none text-[10px] sm:text-xs font-medium px-1">
+                          <SelectValue placeholder="Cat" />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((cat) => (
@@ -183,70 +186,104 @@ export function TransactionTable({
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end justify-between self-stretch shrink-0 min-w-[130px]">
-                  <div className={`font-bold text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <div className="flex flex-col items-end justify-between self-stretch shrink-0">
+                  <div className={`font-bold text-sm sm:text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <TooltipProvider>
-                      {!isIgnoredList ? (
-                        <>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-orange-500 hover:bg-orange-50"
-                                onClick={() => onUpdate(t.id, { isIgnored: true })}
-                              >
-                                <Ban className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Ignorar esta</TooltipContent>
-                          </Tooltip>
+                  <div className="flex items-center gap-0.5 sm:gap-1">
+                    {/* Menu Mobile */}
+                    <div className="sm:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {!isIgnoredList ? (
+                            <>
+                              <DropdownMenuItem onClick={() => onUpdate(t.id, { isIgnored: true })}>
+                                <Ban className="h-4 w-4 mr-2" /> Ignorar
+                              </DropdownMenuItem>
+                              {onIgnoreSimilar && (
+                                <DropdownMenuItem onClick={() => onIgnoreSimilar(t.description)}>
+                                  <History className="h-4 w-4 mr-2" /> Ignorar Similares
+                                </DropdownMenuItem>
+                              )}
+                            </>
+                          ) : (
+                            <DropdownMenuItem onClick={() => onUpdate(t.id, { isIgnored: false })}>
+                              <ArrowUpCircle className="h-4 w-4 mr-2 rotate-180" /> Restaurar
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem className="text-rose-600" onClick={() => onDelete(t.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
-                          {onIgnoreSimilar && (
+                    {/* Desktop Actions */}
+                    <div className="hidden sm:flex items-center gap-1">
+                      <TooltipProvider>
+                        {!isIgnoredList ? (
+                          <>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-orange-600 hover:bg-orange-100"
-                                  onClick={() => onIgnoreSimilar(t.description)}
+                                  className="h-8 w-8 text-slate-400 hover:text-orange-500 hover:bg-orange-50"
+                                  onClick={() => onUpdate(t.id, { isIgnored: true })}
                                 >
-                                  <History className="h-4 w-4" />
+                                  <Ban className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Ignorar todas com este nome</TooltipContent>
+                              <TooltipContent>Ignorar</TooltipContent>
                             </Tooltip>
-                          )}
-                        </>
-                      ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10"
-                              onClick={() => onUpdate(t.id, { isIgnored: false })}
-                            >
-                              <ArrowUpCircle className="h-4 w-4 rotate-180" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Restaurar</TooltipContent>
-                        </Tooltip>
-                      )}
-                    </TooltipProvider>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => onDelete(t.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                            {onIgnoreSimilar && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-400 hover:text-orange-600 hover:bg-orange-100"
+                                    onClick={() => onIgnoreSimilar(t.description)}
+                                  >
+                                    <History className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Similares</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10"
+                                onClick={() => onUpdate(t.id, { isIgnored: false })}
+                              >
+                                <ArrowUpCircle className="h-4 w-4 rotate-180" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Restaurar</TooltipContent>
+                          </Tooltip>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => onDelete(t.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipProvider>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -256,15 +293,15 @@ export function TransactionTable({
       </div>
 
       <AlertDialog open={!!pendingCategoryUpdate} onOpenChange={(open) => !open && setPendingCategoryUpdate(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-lg rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Atualizar semelhantes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja atualizar a categoria de todas as transações com a descrição "{pendingCategoryUpdate?.description}" para "{pendingCategoryUpdate?.category}"?
+            <AlertDialogDescription className="text-sm">
+              Deseja atualizar todas as transações "{pendingCategoryUpdate?.description}" para "{pendingCategoryUpdate?.category}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto" onClick={() => {
               if (pendingCategoryUpdate) {
                 onUpdate(pendingCategoryUpdate.id, { category: pendingCategoryUpdate.category });
               }
@@ -272,14 +309,14 @@ export function TransactionTable({
             }}>
               Apenas esta
             </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
+            <AlertDialogAction className="w-full sm:w-auto" onClick={() => {
               if (pendingCategoryUpdate) {
                 onUpdate(pendingCategoryUpdate.id, { category: pendingCategoryUpdate.category });
                 onUpdateSimilarCategory?.(pendingCategoryUpdate.description, pendingCategoryUpdate.category);
               }
               setPendingCategoryUpdate(null);
             }}>
-              Todas as ocorrências
+              Todas ocorrências
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

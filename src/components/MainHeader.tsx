@@ -23,10 +23,10 @@ export function MainHeader({ auth, categories, onAdd, onImport }: MainHeaderProp
   };
 
   return (
-    <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
+    <header className="bg-white border-b sticky top-0 z-30 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg shrink-0">
             <Image 
               src="/Logo.png" 
               alt="Logo" 
@@ -34,15 +34,23 @@ export function MainHeader({ auth, categories, onAdd, onImport }: MainHeaderProp
               className="object-cover"
             />
           </div>
-          <h1 className="text-xl font-bold text-primary">Orçamento Inteligente</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-primary truncate max-w-[120px] sm:max-w-none">
+            <span className="hidden xs:inline">Orçamento</span> Inteligente
+          </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <TransactionDialog onAdd={onAdd} categories={categories} />
-          <CSVImporter onImport={onImport} />
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
+          <div className="hidden sm:block">
+            <CSVImporter onImport={onImport} />
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+      {/* Mobile only importer - second row if needed or hidden */}
+      <div className="sm:hidden px-4 pb-2 flex justify-end">
+        <CSVImporter onImport={onImport} />
       </div>
     </header>
   );
