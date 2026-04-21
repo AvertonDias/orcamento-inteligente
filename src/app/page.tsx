@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '@/components/DashboardSummary';
 import { TransactionTable } from '@/components/TransactionTable';
 import { CSVImporter } from '@/components/CSVImporter';
@@ -11,21 +11,32 @@ import { AnnualSummaryView } from '@/components/AnnualSummaryView';
 import { Transaction } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PieChart, List, LayoutDashboard, Settings, User, BarChart3 } from 'lucide-react';
+import { PieChart, List, LayoutDashboard, Settings, User, BarChart3, Calendar as CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
 
-  const filteredTransactions = transactions.filter((t) => {
-    const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase()) || 
-                          t.category.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
-    const matchesType = typeFilter === 'all' || t.type === typeFilter;
-    return matchesSearch && matchesCategory && matchesType;
-  });
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const dateObj = new Date(t.date);
+      const matchesMonth = selectedMonth === 'all' || dateObj.getMonth() === selectedMonth;
+      const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase()) || 
+                            t.category.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
+      const matchesType = typeFilter === 'all' || t.type === typeFilter;
+      return matchesMonth && matchesSearch && matchesCategory && matchesType;
+    });
+  }, [transactions, selectedMonth, search, categoryFilter, typeFilter]);
 
   const handleImport = (newTransactions: Transaction[]) => {
     setTransactions((prev) => [...newTransactions, ...prev]);
@@ -45,6 +56,7 @@ export default function Home() {
     setSearch('');
     setCategoryFilter('all');
     setTypeFilter('all');
+    setSelectedMonth('all');
   };
 
   return (
@@ -68,6 +80,33 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Barra de Navegação de Meses (Estilo Excel Tabs) */}
+      <div className="bg-slate-800 text-white overflow-x-auto no-scrollbar border-b">
+        <div className="max-w-7xl mx-auto px-4 flex">
+          <button
+            onClick={() => setSelectedMonth('all')}
+            className={cn(
+              "px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 border-transparent hover:bg-slate-700",
+              selectedMonth === 'all' && "border-primary bg-slate-700 text-primary-foreground"
+            )}
+          >
+            Todos
+          </button>
+          {MONTHS.map((month, index) => (
+            <button
+              key={month}
+              onClick={() => setSelectedMonth(index)}
+              className={cn(
+                "px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 border-transparent hover:bg-slate-700",
+                selectedMonth === index && "border-primary bg-slate-700 text-primary-foreground"
+              )}
+            >
+              {month}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
         <Tabs defaultValue="dashboard" className="space-y-8">
           <div className="flex items-center justify-between border-b pb-4">
@@ -81,6 +120,13 @@ export default function Home() {
                 Resumo Anual
               </TabsTrigger>
             </TabsList>
+            
+            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+              <CalendarIcon className="h-4 w-4" />
+              <span>
+                {selectedMonth === 'all' ? 'Exibindo todo o período' : `Mês: ${MONTHS[selectedMonth as number]}`}
+              </span>
+            </div>
           </div>
 
           <TabsContent value="dashboard" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -88,7 +134,7 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <PieChart className="h-4 w-4 text-primary" />
-                  Resumo do Período
+                  Resumo {selectedMonth === 'all' ? 'Geral' : `de ${MONTHS[selectedMonth as number]}`}
                 </h2>
               </div>
               <DashboardSummary transactions={filteredTransactions} />
@@ -124,7 +170,7 @@ export default function Home() {
                 <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
                   <h3 className="font-semibold text-primary mb-2">Dica Financeira</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Mantenha suas despesas categorizadas para que a IA possa aprender seus padrões e sugerir orçamentos melhores.
+                    Navegue pelos meses acima para comparar seu desempenho. A constância na categorização ajuda a IA a ser mais precisa.
                   </p>
                 </div>
               </aside>

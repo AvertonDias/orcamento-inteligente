@@ -17,7 +17,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  // Função auxiliar para parsear linha de CSV lidando com aspas e vírgulas internas
   const parseCSVLine = (line: string) => {
     const result = [];
     let current = '';
@@ -37,6 +36,15 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return result;
   };
 
+  // Converte DD/MM/YYYY para YYYY-MM-DD
+  const parseDate = (dateStr: string) => {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,7 +57,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       const lines = content.split('\n');
       const newTransactions: Transaction[] = [];
 
-      // A primeira linha é o cabeçalho: Data,"Lançamento","Detalhes","Nº documento","Valor","Tipo Lançamento"
       const startIndex = 1;
 
       for (let i = startIndex; i < lines.length; i++) {
@@ -59,17 +66,16 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const parts = parseCSVLine(line);
         if (parts.length < 5) continue;
 
-        const date = parts[0];
+        const rawDate = parts[0];
         const lancamento = parts[1];
         const detalhes = parts[2];
         const valorOriginal = parts[4];
 
-        // Ignorar linhas de saldo ou datas zeradas
-        if (date === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
+        if (rawDate === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
           continue;
         }
 
-        // Limpar valor: remover pontos de milhar e trocar vírgula por ponto decimal
+        const isoDate = parseDate(rawDate);
         const amountStr = valorOriginal
           .replace(/\./g, '')
           .replace(',', '.')
@@ -79,11 +85,8 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         if (isNaN(amount)) continue;
 
         const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
-        
-        // Combinar lançamento e detalhes para uma melhor sugestão da IA
         const fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
 
-        // Usar IA para sugerir categoria
         let category = 'Outros';
         try {
           const suggestion = await suggestTransactionCategory({
@@ -91,12 +94,12 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           });
           category = suggestion.suggestedCategory;
         } catch (error) {
-          // Fallback silencioso para "Outros" em caso de erro na IA
+          // Fallback silencioso
         }
 
         newTransactions.push({
           id: Math.random().toString(36).substr(2, 9),
-          date: date, // Mantém o formato DD/MM/YYYY para exibição
+          date: isoDate,
           description: fullDescription,
           amount: Math.abs(amount),
           category,
@@ -135,9 +138,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           {isProcessing ? "Processando..." : "Importar Extrato"}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground hidden sm:block">
-        Suporta formato padrão de exportação bancária.
-      </p>
     </div>
   );
 }
