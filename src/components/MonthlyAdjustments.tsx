@@ -14,7 +14,8 @@ import {
   X, 
   Search,
   LayoutGrid,
-  MousePointerClick
+  MousePointerClick,
+  Share2
 } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -192,6 +193,20 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
     setIsItemsPickerOpen(null);
   };
 
+  const handleShareWhatsApp = (table: AdjustmentTable, baseTotal: number, adjustmentsTotal: number, finalTotal: number) => {
+    const text = `*Resumo Financeiro: ${table.name}*\n\n` +
+      `*Valores Base:*\n` +
+      table.baseValues.map(v => `• ${v.name}: ${formatCurrency(v.value)}`).join('\n') +
+      `\n_Subtotal Base: ${formatCurrency(baseTotal)}_\n\n` +
+      `*Ajustes (Somas/Deduções):*\n` +
+      (table.items.length > 0 ? table.items.map(i => `• ${i.name}: ${i.type === 'plus' ? '+' : '-'}${formatCurrency(i.value)}`).join('\n') : '_Nenhum ajuste_') +
+      `\n_Total Ajustes: ${adjustmentsTotal >= 0 ? '+' : ''}${formatCurrency(adjustmentsTotal)}_\n\n` +
+      `*Saldo Final Calculado: ${formatCurrency(finalTotal)}*`;
+
+    const encodedText = encodeURIComponent(text);
+    window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+  };
+
   if (isLoading) return null;
 
   return (
@@ -244,9 +259,24 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                       className="h-8 border-none bg-transparent font-bold text-slate-700 focus-visible:ring-0 p-0 w-full"
                     />
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50" onClick={() => removeTable(table.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" 
+                      onClick={() => handleShareWhatsApp(table, baseTotal, adjustmentsTotal, finalTotal)}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50" 
+                      onClick={() => removeTable(table.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 
                 <CardContent className="pt-6 space-y-6 flex-1">
