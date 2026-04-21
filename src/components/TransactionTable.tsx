@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -18,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Transaction, DEFAULT_CATEGORIES } from '@/app/lib/types';
+import { Transaction } from '@/app/lib/types';
 import { formatCurrency, formatDate } from '@/app/lib/formatters';
 import { ArrowUpCircle, ArrowDownCircle, Trash2, Ban, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ interface TransactionTableProps {
   onDelete: (id: string) => void;
   onIgnoreSimilar?: (description: string) => void;
   isIgnoredList?: boolean;
+  categories: string[];
 }
 
 export function TransactionTable({ 
@@ -37,7 +37,8 @@ export function TransactionTable({
   onUpdate, 
   onDelete, 
   onIgnoreSimilar,
-  isIgnoredList = false 
+  isIgnoredList = false,
+  categories
 }: TransactionTableProps) {
   if (transactions.length === 0) {
     return (
@@ -91,7 +92,7 @@ export function TransactionTable({
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEFAULT_CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -12,7 +11,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { DEFAULT_CATEGORIES } from '@/app/lib/types';
 
 interface FiltersProps {
   search: string;
@@ -22,6 +20,7 @@ interface FiltersProps {
   type: string;
   setType: (val: string) => void;
   onClear: () => void;
+  categories: string[];
 }
 
 export function TransactionFilters({
@@ -31,7 +30,8 @@ export function TransactionFilters({
   setCategory,
   type,
   setType,
-  onClear
+  onClear,
+  categories
 }: FiltersProps) {
   const hasFilters = search || category !== 'all' || type !== 'all';
 
@@ -65,7 +65,7 @@ export function TransactionFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas Categorias</SelectItem>
-            {DEFAULT_CATEGORIES.map(cat => (
+            {categories.map(cat => (
               <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
           </SelectContent>

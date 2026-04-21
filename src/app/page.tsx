@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardSummary } from '@/components/DashboardSummary';
 import { TransactionTable } from '@/components/TransactionTable';
 import { CSVImporter } from '@/components/CSVImporter';
@@ -26,7 +25,10 @@ import {
   AlertCircle,
   EyeOff,
   Settings as SettingsIcon,
-  Tag
+  Tag,
+  Plus,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,7 +39,8 @@ import {
   useUser, 
   useFirestore, 
   useAuth, 
-  useCollection 
+  useCollection,
+  useDoc
 } from '@/firebase';
 import { 
   collection, 
@@ -48,15 +51,9 @@ import {
   updateDoc, 
   addDoc,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  setDoc
 } from 'firebase/firestore';
-import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
-} from 'firebase/auth';
 import { useMemoFirebase } from '@/firebase/firestore/use-collection';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
@@ -64,6 +61,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -88,6 +92,9 @@ export default function Home() {
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Settings State
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
     return query(
@@ -97,6 +104,18 @@ export default function Home() {
   }, [db, user]);
 
   const { data: transactions = [], loading: dataLoading } = useCollection(transactionsQuery);
+
+  // User Settings
+  const settingsRef = useMemo(() => {
+    if (!db || !user) return null;
+    return doc(db, 'users', user.uid, 'settings', 'config');
+  }, [db, user]);
+
+  const { data: settings } = useDoc(settingsRef);
+
+  const categories = useMemo(() => {
+    return settings?.categories || DEFAULT_CATEGORIES;
+  }, [settings]);
 
   const activeTransactions = useMemo(() => transactions.filter(t => !t.isIgnored), [transactions]);
   const ignoredTransactions = useMemo(() => transactions.filter(t => t.isIgnored), [transactions]);
@@ -134,7 +153,7 @@ export default function Home() {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
-        setAuthError("O pop-up de login foi fechado ou bloqueado pelo navegador. Verifique se os 'Domínios Autorizados' estão configurados no console do Firebase.");
+        setAuthError("O pop-up de login foi fechado. Se ele fechar sozinho, verifique se o domínio do site está autorizado no console do Firebase.");
       } else if (err.code === 'auth/api-key-not-valid') {
         setAuthError("Chave de API inválida. Verifique sua configuração no arquivo de configuração do Firebase.");
       } else {
@@ -238,6 +257,27 @@ export default function Home() {
     }
   };
 
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim() || !settingsRef) return;
+    const updatedCategories = [...categories, newCategoryName.trim()];
+    setDoc(settingsRef, { categories: updatedCategories }, { merge: true });
+    setNewCategoryName('');
+    toast({ title: "Categoria adicionada", description: `"${newCategoryName}" agora está disponível.` });
+  };
+
+  const handleRemoveCategory = (cat: string) => {
+    if (!settingsRef) return;
+    const updatedCategories = categories.filter(c => c !== cat);
+    setDoc(settingsRef, { categories: updatedCategories }, { merge: true });
+    toast({ title: "Categoria removida", description: `"${cat}" foi removida da sua lista.` });
+  };
+
+  const handleResetCategories = () => {
+    if (!settingsRef) return;
+    setDoc(settingsRef, { categories: DEFAULT_CATEGORIES }, { merge: true });
+    toast({ title: "Categorias resetadas", description: "Sua lista voltou ao padrão do sistema." });
+  };
+
   const clearFilters = () => {
     setSearch('');
     setCategoryFilter('all');
@@ -330,7 +370,7 @@ export default function Home() {
       <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2"><div className="bg-primary p-1.5 rounded-lg"><LayoutDashboard className="h-5 w-5 text-white" /></div><h1 className="text-xl font-bold text-primary">Orçamento Inteligente</h1></div>
-          <div className="flex items-center gap-3"><TransactionDialog onAdd={handleAdd} /><CSVImporter onImport={handleImport} /><Button variant="ghost" size="icon" onClick={handleLogout}><LogOut className="h-4 w-4" /></Button></div>
+          <div className="flex items-center gap-3"><TransactionDialog onAdd={handleAdd} categories={categories} /><CSVImporter onImport={handleImport} /><Button variant="ghost" size="icon" onClick={handleLogout}><LogOut className="h-4 w-4" /></Button></div>
         </div>
       </header>
 
@@ -353,8 +393,23 @@ export default function Home() {
             <DashboardSummary transactions={filteredActive} />
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
-                <TransactionFilters search={search} setSearch={setSearch} category={categoryFilter} setCategory={setCategoryFilter} type={typeFilter} setType={setTypeFilter} onClear={clearFilters} />
-                <TransactionTable transactions={filteredActive} onUpdate={handleUpdate} onDelete={handleDelete} onIgnoreSimilar={handleIgnoreSimilar} />
+                <TransactionFilters 
+                  search={search} 
+                  setSearch={setSearch} 
+                  category={categoryFilter} 
+                  setCategory={setCategoryFilter} 
+                  type={typeFilter} 
+                  setType={setTypeFilter} 
+                  onClear={clearFilters}
+                  categories={categories}
+                />
+                <TransactionTable 
+                  transactions={filteredActive} 
+                  onUpdate={handleUpdate} 
+                  onDelete={handleDelete} 
+                  onIgnoreSimilar={handleIgnoreSimilar} 
+                  categories={categories}
+                />
               </div>
               <aside><FinanceChart transactions={filteredActive} /></aside>
             </div>
@@ -370,6 +425,7 @@ export default function Home() {
                   onUpdate={handleUpdate} 
                   onDelete={handleDelete}
                   isIgnoredList={true}
+                  categories={categories}
                 />
               </section>
             )}
@@ -380,59 +436,79 @@ export default function Home() {
           </TabsContent>
 
           <TabsContent value="settings">
-            <div className="max-w-2xl space-y-6">
+            <div className="max-w-4xl grid gap-6 md:grid-cols-2">
               <Card className="border-none shadow-md">
                 <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Tag className="h-5 w-5 text-primary" />
-                    Categorias Disponíveis
+                  <CardTitle className="text-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-5 w-5 text-primary" />
+                      Minhas Categorias
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleResetCategories} className="h-8 text-xs gap-1">
+                      <RotateCcw className="h-3 w-3" />
+                      Resetar
+                    </Button>
                   </CardTitle>
                   <CardDescription>
-                    Estas são as categorias que você pode usar para organizar seus gastos.
+                    Adicione ou remova categorias para organizar seus gastos.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {DEFAULT_CATEGORIES.map(cat => (
-                      <Badge key={cat} variant="secondary" className="px-3 py-1 text-sm font-medium">
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Nova categoria..." 
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                    />
+                    <Button onClick={handleAddCategory} size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {categories.map(cat => (
+                      <Badge key={cat} variant="secondary" className="px-3 py-1 text-sm font-medium flex items-center gap-1 group">
                         {cat}
+                        <button 
+                          onClick={() => handleRemoveCategory(cat)}
+                          className="hover:text-destructive text-muted-foreground ml-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </Badge>
                     ))}
                   </div>
                 </CardContent>
-                <CardFooter className="bg-slate-50 rounded-b-lg border-t">
-                  <p className="text-xs text-muted-foreground">
-                    Para editar as categorias disponíveis, você pode modificar o arquivo <code>src/app/lib/types.ts</code>.
-                  </p>
-                </CardFooter>
               </Card>
 
-              <Card className="border-none shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl">Perfil do Usuário</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <Mail className="h-6 w-6 text-primary" />
+              <div className="space-y-6">
+                <Card className="border-none shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-xl">Perfil do Usuário</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-primary/10 p-3 rounded-full">
+                        <Mail className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Email</p>
+                        <p className="text-lg font-bold truncate max-w-[200px]">{user?.email}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Email</p>
-                      <p className="text-lg font-bold">{user?.email}</p>
+                    <Separator />
+                    <div className="flex items-center gap-4">
+                      <div className="bg-slate-100 p-3 rounded-full">
+                        <LayoutDashboard className="h-6 w-6 text-slate-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">ID do Usuário</p>
+                        <p className="text-xs font-mono">{user?.uid}</p>
+                      </div>
                     </div>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center gap-4">
-                    <div className="bg-slate-100 p-3 rounded-full">
-                      <LayoutDashboard className="h-6 w-6 text-slate-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">ID do Usuário</p>
-                      <p className="text-xs font-mono">{user?.uid}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

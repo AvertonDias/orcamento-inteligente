@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Transaction": {
@@ -16,6 +15,17 @@
         "isIgnored": { "type": "boolean", "description": "Define se a transação deve ser ignorada nos cálculos." }
       },
       "required": ["date", "description", "amount", "category", "type", "userId"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "Configurações personalizadas do usuário.",
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
     }
   },
   "auth": {
@@ -25,6 +35,10 @@
     "/users/{userId}/transactions/{transactionId}": {
       "schema": { "$ref": "#/backend/entities/Transaction" },
       "description": "Transações financeiras do usuário"
+    },
+    "/users/{userId}/settings/config": {
+      "schema": { "$ref": "#/backend/entities/UserSettings" },
+      "description": "Configurações globais do usuário"
     }
   }
 }

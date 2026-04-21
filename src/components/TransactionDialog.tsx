@@ -20,13 +20,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Loader2 } from 'lucide-react';
-import { DEFAULT_CATEGORIES, TransactionType } from '@/app/lib/types';
+import { TransactionType } from '@/app/lib/types';
 
 interface TransactionDialogProps {
   onAdd: (transaction: any) => void;
+  categories: string[];
 }
 
-export function TransactionDialog({ onAdd }: TransactionDialogProps) {
+export function TransactionDialog({ onAdd, categories }: TransactionDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -126,7 +127,7 @@ export function TransactionDialog({ onAdd }: TransactionDialogProps) {
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEFAULT_CATEGORIES.map(cat => (
+                  {categories.map(cat => (
                     <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
