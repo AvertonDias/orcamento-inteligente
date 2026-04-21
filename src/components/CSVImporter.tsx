@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, FileText, Loader2 } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 import { Transaction, TransactionType } from '@/app/lib/types';
 import { suggestTransactionCategory } from '@/ai/flows/sugestao-categoria-transacao';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,26 @@ interface CSVImporterProps {
 export function CSVImporter({ onImport }: CSVImporterProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+
+  // Função auxiliar para parsear linha de CSV lidando com aspas e vírgulas internas
+  const parseCSVLine = (line: string) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,41 +49,55 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       const lines = content.split('\n');
       const newTransactions: Transaction[] = [];
 
-      // Skip header if it exists
-      const startIndex = lines[0].toLowerCase().includes('data') || lines[0].toLowerCase().includes('valor') ? 1 : 0;
+      // A primeira linha é o cabeçalho: Data,"Lançamento","Detalhes","Nº documento","Valor","Tipo Lançamento"
+      const startIndex = 1;
 
       for (let i = startIndex; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Naive CSV split, supporting comma or semicolon
-        const parts = line.split(/[;,]/);
-        if (parts.length < 3) continue;
+        const parts = parseCSVLine(line);
+        if (parts.length < 5) continue;
 
         const date = parts[0];
-        const description = parts[1];
-        const amountStr = parts[2].replace(',', '.').replace(/[^\d.-]/g, '');
-        const amount = parseFloat(amountStr);
+        const lancamento = parts[1];
+        const detalhes = parts[2];
+        const valorOriginal = parts[4];
 
+        // Ignorar linhas de saldo ou datas zeradas
+        if (date === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
+          continue;
+        }
+
+        // Limpar valor: remover pontos de milhar e trocar vírgula por ponto decimal
+        const amountStr = valorOriginal
+          .replace(/\./g, '')
+          .replace(',', '.')
+          .replace(/[^\d.-]/g, '');
+        
+        const amount = parseFloat(amountStr);
         if (isNaN(amount)) continue;
 
         const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
         
-        // Use AI to suggest category
+        // Combinar lançamento e detalhes para uma melhor sugestão da IA
+        const fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
+
+        // Usar IA para sugerir categoria
         let category = 'Outros';
         try {
           const suggestion = await suggestTransactionCategory({
-            description: description,
+            description: fullDescription,
           });
           category = suggestion.suggestedCategory;
         } catch (error) {
-          console.error("AI suggestion failed", error);
+          // Fallback silencioso para "Outros" em caso de erro na IA
         }
 
         newTransactions.push({
           id: Math.random().toString(36).substr(2, 9),
-          date,
-          description,
+          date: date, // Mantém o formato DD/MM/YYYY para exibição
+          description: fullDescription,
           amount: Math.abs(amount),
           category,
           type
@@ -76,11 +110,10 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         title: "Importação concluída",
         description: `${newTransactions.length} transações foram importadas com sucesso.`
       });
-      // Reset input
       e.target.value = '';
     };
 
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   };
 
   return (
@@ -99,11 +132,11 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           ) : (
             <Upload className="h-4 w-4" />
           )}
-          {isProcessing ? "Processando..." : "Importar CSV"}
+          {isProcessing ? "Processando..." : "Importar Extrato"}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground hidden sm:block">
-        Format: Data, Descrição, Valor
+        Suporta formato padrão de exportação bancária.
       </p>
     </div>
   );
