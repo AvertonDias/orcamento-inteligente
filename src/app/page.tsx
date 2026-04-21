@@ -17,7 +17,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2,
-  EyeOff
+  EyeOff,
+  Calculator,
+  ReceiptText
 } from 'lucide-react';
 import { 
   useUser, 
@@ -53,6 +55,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const yearMonthKey = useMemo(() => {
     const year = new Date().getFullYear();
@@ -265,11 +268,18 @@ export default function Home() {
         onImport={handleImport} 
       />
 
-      <Tabs defaultValue="dashboard" className="w-full flex flex-col flex-1">
-        <div className="bg-white border-b">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col flex-1">
+        <div className="bg-white border-b sticky top-16 z-20">
           <div className="max-w-7xl mx-auto px-4 pt-4">
             <TabsList className="bg-slate-100 p-1">
-              <TabsTrigger value="dashboard" className="px-6">Meus Lançamentos</TabsTrigger>
+              <TabsTrigger value="dashboard" className="px-6 gap-2">
+                <ReceiptText className="h-4 w-4" />
+                Lançamentos
+              </TabsTrigger>
+              <TabsTrigger value="adjustments" className="px-6 gap-2">
+                <Calculator className="h-4 w-4" />
+                Divisões / Ajustes
+              </TabsTrigger>
               <TabsTrigger value="settings" className="px-6">Configurações</TabsTrigger>
             </TabsList>
           </div>
@@ -288,10 +298,6 @@ export default function Home() {
               <div className="space-y-12">
                 <DashboardSummary transactions={filteredActive} />
                 
-                {yearMonthKey && (
-                  <MonthlyAdjustments yearMonth={yearMonthKey} transactions={filteredActive} />
-                )}
-
                 <div className="grid gap-8 lg:grid-cols-3 pt-8 border-t">
                   <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -331,6 +337,24 @@ export default function Home() {
                   </section>
                 )}
               </div>
+            )}
+          </main>
+        </TabsContent>
+
+        <TabsContent value="adjustments" className="flex-1 flex flex-col m-0">
+          <MonthSelector 
+            selectedMonth={selectedMonth} 
+            onSelect={setSelectedMonth} 
+          />
+          <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+            {selectedMonth === 'annual' ? (
+              <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed">
+                <p className="text-slate-500">O Resumo Anual mostra apenas o fluxo financeiro. Selecione um mês específico para ver as divisões de contas.</p>
+              </div>
+            ) : (
+              yearMonthKey && (
+                <MonthlyAdjustments yearMonth={yearMonthKey} transactions={filteredActive} />
+              )
             )}
           </main>
         </TabsContent>
