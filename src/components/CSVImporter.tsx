@@ -53,9 +53,11 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     
     let clean = val.trim().replace(/[R$\s]/g, '');
 
+    // Resolve problema de casas decimais (ex: 79,90 virando 7990)
+    // No Brasil o separador decimal é a vírgula
     if (clean.includes(',')) {
-      clean = clean.replace(/\./g, '');
-      clean = clean.replace(',', '.');
+      clean = clean.replace(/\./g, ''); // Remove separador de milhar se houver
+      clean = clean.replace(',', '.');  // Converte decimal para formato JS
     }
     
     const result = parseFloat(clean);
@@ -64,8 +66,8 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
 
   const cleanDescription = (desc: string) => {
     return desc
-      .replace(/\d{2}\/\d{2}\/\d{4}/g, '')
-      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')
+      .replace(/\d{2}\/\d{2}\/\d{4}/g, '') // Remove datas DD/MM/AAAA
+      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')   // Remove datas DD/MM/AA
       .replace(/\s\s+/g, ' ')
       .trim();
   };
@@ -155,10 +157,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
 
         if (newTransactions.length > 0) {
           onImport(newTransactions);
-          toast({
-            title: "Importação concluída",
-            description: `${newTransactions.length} transações do ${activeBank === 'bb' ? 'Banco do Brasil' : 'Nubank'} processadas.`
-          });
         } else {
           toast({
             variant: "destructive",

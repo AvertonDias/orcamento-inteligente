@@ -98,7 +98,7 @@ export default function Home() {
   // Settings State
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // Set current month only after hydration
+  // Set current month only after hydration to avoid mismatch
   useEffect(() => {
     setSelectedMonth(new Date().getMonth());
   }, []);
@@ -136,6 +136,7 @@ export default function Home() {
 
   const { data: settings } = useDoc(settingsRef);
 
+  // Alphabetical categories
   const categories = useMemo(() => {
     const cats = settings?.categories || DEFAULT_CATEGORIES;
     return [...cats].sort((a, b) => a.localeCompare(b, 'pt-BR'));
