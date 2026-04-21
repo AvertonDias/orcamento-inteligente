@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, FileCheck } from 'lucide-react';
 import { Transaction, TransactionType } from '@/app/lib/types';
 import { suggestTransactionCategory } from '@/ai/flows/sugestao-categoria-transacao';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +13,7 @@ interface CSVImporterProps {
 
 export function CSVImporter({ onImport }: CSVImporterProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const parseCSVLine = (line: string) => {
@@ -35,7 +35,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return result;
   };
 
-  // Converte DD/MM/YYYY para YYYY-MM-DD
   const parseDate = (dateStr: string) => {
     const parts = dateStr.split('/');
     if (parts.length === 3) {
@@ -47,6 +46,10 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return dateStr;
   };
 
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -55,104 +58,126 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     const reader = new FileReader();
 
     reader.onload = async (event) => {
-      const content = event.target?.result as string;
-      const lines = content.split('\n');
-      const newTransactions: Transaction[] = [];
+      try {
+        const content = event.target?.result as string;
+        const lines = content.split('\n');
+        const newTransactions: Transaction[] = [];
 
-      // Pula o cabeçalho
-      const startIndex = 1;
+        const startIndex = 1;
 
-      for (let i = startIndex; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+        for (let i = startIndex; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
 
-        const parts = parseCSVLine(line);
-        if (parts.length < 5) continue;
+          const parts = parseCSVLine(line);
+          if (parts.length < 5) continue;
 
-        const rawDate = parts[0];
-        const lancamento = parts[1];
-        const detalhes = parts[2];
-        const valorOriginal = parts[4];
+          const rawDate = parts[0];
+          const lancamento = parts[1];
+          const detalhes = parts[2];
+          const valorOriginal = parts[4];
 
-        // Ignora campos inválidos ou de saldo
-        if (!rawDate || rawDate === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
-          continue;
-        }
+          if (!rawDate || rawDate === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
+            continue;
+          }
 
-        const isoDate = parseDate(rawDate);
-        
-        // Limpa o valor para conversão numérica
-        const amountStr = valorOriginal
-          .replace(/\./g, '')
-          .replace(',', '.')
-          .replace(/[^\d.-]/g, '');
-        
-        const amount = parseFloat(amountStr);
-        
-        // IGNORAR campos com valor 0 ou NaN
-        if (isNaN(amount) || amount === 0) {
-          continue;
-        }
+          const isoDate = parseDate(rawDate);
+          
+          const amountStr = valorOriginal
+            .replace(/\./g, '')
+            .replace(',', '.')
+            .replace(/[^\d.-]/g, '');
+          
+          const amount = parseFloat(amountStr);
+          
+          if (isNaN(amount) || amount === 0) {
+            continue;
+          }
 
-        const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
-        const fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
+          const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
+          const fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
 
-        let category = 'Outros';
-        try {
-          // A IA usa a descrição completa para sugerir a melhor categoria
-          const suggestion = await suggestTransactionCategory({
+          let category = 'Outros';
+          try {
+            const suggestion = await suggestTransactionCategory({
+              description: fullDescription,
+            });
+            category = suggestion.suggestedCategory;
+          } catch (error) {
+            // IA offline ou erro, mantém Outros
+          }
+
+          newTransactions.push({
+            id: Math.random().toString(36).substr(2, 9),
+            date: isoDate,
             description: fullDescription,
+            amount: Math.abs(amount),
+            category,
+            type
           });
-          category = suggestion.suggestedCategory;
-        } catch (error) {
-          // Fallback silencioso para 'Outros' em caso de erro na IA
         }
 
-        newTransactions.push({
-          id: Math.random().toString(36).substr(2, 9),
-          date: isoDate,
-          description: fullDescription,
-          amount: Math.abs(amount),
-          category,
-          type
+        newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        if (newTransactions.length > 0) {
+          onImport(newTransactions);
+          toast({
+            title: "Importação concluída",
+            description: `${newTransactions.length} transações foram processadas e salvas.`
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Arquivo vazio ou inválido",
+            description: "Não encontramos transações válidas neste arquivo CSV."
+          });
+        }
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "Erro no processamento",
+          description: "Não foi possível ler o arquivo. Verifique se é um CSV válido."
         });
+      } finally {
+        setIsProcessing(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }
-
-      // Ordena por data antes de importar
-      newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      onImport(newTransactions);
-      setIsProcessing(false);
-      toast({
-        title: "Importação concluída",
-        description: `${newTransactions.length} transações válidas foram importadas e organizadas por data.`
-      });
-      e.target.value = '';
     };
 
-    // Usando ISO-8859-1 para suportar acentos de extratos bancários brasileiros
     reader.readAsText(file, 'ISO-8859-1');
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative cursor-pointer">
-        <Input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          disabled={isProcessing}
-        />
-        <Button variant="outline" className="flex items-center gap-2" disabled={isProcessing}>
-          {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
+    <div className="flex items-center">
+      <input
+        type="file"
+        accept=".csv"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <Button 
+        variant="outline" 
+        onClick={handleButtonClick}
+        disabled={isProcessing}
+        className="relative overflow-hidden min-w-[160px] gap-2 transition-all"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="animate-pulse">Analisando...</span>
+          </>
+        ) : (
+          <>
             <Upload className="h-4 w-4" />
-          )}
-          {isProcessing ? "Processando..." : "Importar Extrato"}
-        </Button>
-      </div>
+            <span>Importar Extrato</span>
+          </>
+        )}
+        
+        {isProcessing && (
+          <div className="absolute bottom-0 left-0 h-1 bg-primary/20 animate-progress w-full" />
+        )}
+      </Button>
     </div>
   );
 }
