@@ -209,43 +209,45 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             <ChevronDown className="h-3 w-3 opacity-50" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
+                        <DialogContent className="sm:max-w-md overflow-hidden">
                           <DialogHeader>
                             <DialogTitle>Escolher do Extrato</DialogTitle>
                             <DialogDescription>Selecione um ou mais lançamentos para compor o valor base.</DialogDescription>
                           </DialogHeader>
-                          <div className="py-4 space-y-4">
+                          <div className="py-4 space-y-4 max-w-full">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input 
                                 placeholder="Pesquisar..." 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9"
+                                className="pl-9 w-full"
                               />
                             </div>
-                            <ScrollArea className="h-64 border rounded-md p-2">
-                              {filteredTransactions.map((t) => (
-                                <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
-                                  if (selectedForBase.includes(t.id)) {
-                                    setSelectedForBase(selectedForBase.filter(id => id !== t.id));
-                                  } else {
-                                    setSelectedForBase([...selectedForBase, t.id]);
-                                  }
-                                }}>
-                                  <Checkbox checked={selectedForBase.includes(t.id)} />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold truncate">{t.description}</p>
-                                    <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                            <ScrollArea className="h-64 border rounded-md p-2 w-full">
+                              <div className="space-y-1">
+                                {filteredTransactions.map((t) => (
+                                  <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                    if (selectedForBase.includes(t.id)) {
+                                      setSelectedForBase(selectedForBase.filter(id => id !== t.id));
+                                    } else {
+                                      setSelectedForBase([...selectedForBase, t.id]);
+                                    }
+                                  }}>
+                                    <Checkbox checked={selectedForBase.includes(t.id)} onCheckedChange={() => {}} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold truncate">{t.description}</p>
+                                      <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="text-xs font-black shrink-0">{formatCurrency(t.amount)}</div>
                                   </div>
-                                  <div className="text-xs font-black">{formatCurrency(t.amount)}</div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </ScrollArea>
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => { setSelectedForBase([]); setIsBasePickerOpen(false); }}>Cancelar</Button>
-                            <Button disabled={selectedForBase.length === 0} onClick={() => handleBulkAddBase(table.id)}>
+                          <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setSelectedForBase([]); setIsBasePickerOpen(false); }}>Cancelar</Button>
+                            <Button className="w-full sm:w-auto" disabled={selectedForBase.length === 0} onClick={() => handleBulkAddBase(table.id)}>
                               Confirmar ({selectedForBase.length})
                             </Button>
                           </DialogFooter>
@@ -277,43 +279,45 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             Importar do Extrato
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
+                        <DialogContent className="sm:max-w-md overflow-hidden">
                           <DialogHeader>
                             <DialogTitle>Importar Ajustes</DialogTitle>
                             <DialogDescription>Selecione os lançamentos que deseja adicionar à tabela.</DialogDescription>
                           </DialogHeader>
-                          <div className="py-4 space-y-4">
+                          <div className="py-4 space-y-4 max-w-full">
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input 
                                 placeholder="Pesquisar..." 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9"
+                                className="pl-9 w-full"
                               />
                             </div>
-                            <ScrollArea className="h-64 border rounded-md p-2">
-                              {filteredTransactions.map((t) => (
-                                <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
-                                  if (selectedForItems.includes(t.id)) {
-                                    setSelectedForItems(selectedForItems.filter(id => id !== t.id));
-                                  } else {
-                                    setSelectedForItems([...selectedForItems, t.id]);
-                                  }
-                                }}>
-                                  <Checkbox checked={selectedForItems.includes(t.id)} />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold truncate">{t.description}</p>
-                                    <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                            <ScrollArea className="h-64 border rounded-md p-2 w-full">
+                              <div className="space-y-1">
+                                {filteredTransactions.map((t) => (
+                                  <div key={t.id} className="flex items-center space-x-3 p-2 hover:bg-slate-50 rounded-md cursor-pointer" onClick={() => {
+                                    if (selectedForItems.includes(t.id)) {
+                                      setSelectedForItems(selectedForItems.filter(id => id !== t.id));
+                                    } else {
+                                      setSelectedForItems([...selectedForItems, t.id]);
+                                    }
+                                  }}>
+                                    <Checkbox checked={selectedForItems.includes(t.id)} onCheckedChange={() => {}} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold truncate">{t.description}</p>
+                                      <p className="text-[10px] text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="text-xs font-black shrink-0">{formatCurrency(t.amount)}</div>
                                   </div>
-                                  <div className="text-xs font-black">{formatCurrency(t.amount)}</div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </ScrollArea>
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => { setSelectedForItems([]); setIsItemsPickerOpen(null); }}>Cancelar</Button>
-                            <Button disabled={selectedForItems.length === 0} onClick={() => handleBulkAddItems(table.id)}>
+                          <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setSelectedForItems([]); setIsItemsPickerOpen(null); }}>Cancelar</Button>
+                            <Button className="w-full sm:w-auto" disabled={selectedForItems.length === 0} onClick={() => handleBulkAddItems(table.id)}>
                               Adicionar ({selectedForItems.length})
                             </Button>
                           </DialogFooter>
@@ -336,7 +340,7 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                             {item.type === 'plus' ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
                           </Button>
 
-                          <div className="flex-1 flex items-center gap-2">
+                          <div className="flex-1 flex items-center gap-2 overflow-hidden">
                             <Input 
                               placeholder="Descrição..." 
                               value={item.name} 
