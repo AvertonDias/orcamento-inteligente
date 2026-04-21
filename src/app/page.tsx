@@ -69,7 +69,8 @@ export default function Home() {
     );
   }, [db, user]);
 
-  const { data: transactions = [], isLoading: dataLoading } = useCollection(transactionsQuery);
+  const { data: transactionsData, isLoading: dataLoading } = useCollection(transactionsQuery);
+  const transactions = useMemo(() => transactionsData || [], [transactionsData]);
 
   const settingsRef = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -83,8 +84,8 @@ export default function Home() {
     return [...cats].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [settings]);
 
-  const activeTransactions = useMemo(() => (transactions || []).filter(t => !t.isIgnored), [transactions]);
-  const ignoredTransactions = useMemo(() => (transactions || []).filter(t => t.isIgnored), [transactions]);
+  const activeTransactions = useMemo(() => transactions.filter(t => !t.isIgnored), [transactions]);
+  const ignoredTransactions = useMemo(() => transactions.filter(t => t.isIgnored), [transactions]);
 
   const filteredActive = useMemo(() => {
     return activeTransactions.filter((t) => {
@@ -176,7 +177,7 @@ export default function Home() {
 
   const handleUpdateSimilarCategory = async (description: string, category: string) => {
     if (!db || !user) return;
-    const similar = (transactions || []).filter(t => t.description === description && t.category !== category);
+    const similar = transactions.filter(t => t.description === description && t.category !== category);
     if (similar.length === 0) return;
 
     const batch = writeBatch(db);
@@ -198,7 +199,7 @@ export default function Home() {
 
   const handleIgnoreSimilar = async (description: string) => {
     if (!db || !user) return;
-    const similar = (transactions || []).filter(t => t.description === description && !t.isIgnored);
+    const similar = transactions.filter(t => t.description === description && !t.isIgnored);
     if (similar.length === 0) return;
 
     const batch = writeBatch(db);
