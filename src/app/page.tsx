@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -138,7 +137,8 @@ export default function Home() {
   const { data: settings } = useDoc(settingsRef);
 
   const categories = useMemo(() => {
-    return settings?.categories || DEFAULT_CATEGORIES;
+    const cats = settings?.categories || DEFAULT_CATEGORIES;
+    return [...cats].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [settings]);
 
   const activeTransactions = useMemo(() => (transactions || []).filter(t => !t.isIgnored), [transactions]);
@@ -216,8 +216,6 @@ export default function Home() {
     if (!db || !user) return;
     const colRef = collection(db, 'users', user.uid, 'transactions');
     
-    // Gerar "impressões digitais" das transações existentes para evitar duplicatas
-    // Consideramos duplicata se data, descrição, valor, banco e tipo forem idênticos
     const existingFingerprints = new Set(
       transactions.map(t => `${t.date}_${t.description.trim()}_${t.amount.toFixed(2)}_${t.bank}_${t.type}`)
     );
