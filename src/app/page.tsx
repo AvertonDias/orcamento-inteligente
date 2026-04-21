@@ -22,7 +22,8 @@ import {
   LogIn,
   Mail,
   Lock,
-  BarChart3
+  BarChart3,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,7 @@ import { useMemoFirebase } from '@/firebase/firestore/use-collection';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -78,6 +80,7 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -104,22 +107,41 @@ export default function Home() {
   const handleGoogleLogin = async () => {
     if (!auth) return;
     setIsAuthProcessing(true);
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider)
-      .catch(err => {
-        toast({
-          variant: "destructive",
-          title: "Erro na autenticação",
-          description: "Não foi possível entrar com Google. Verifique sua chave de API."
-        });
-      })
-      .finally(() => setIsAuthProcessing(false));
+    
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error("Erro Google Login:", err);
+      let msg = "Não foi possível entrar com Google.";
+      
+      if (err.code === 'auth/auth-domain-config-required') {
+        msg = "Configuração de domínio pendente no Firebase.";
+      } else if (err.code === 'auth/operation-not-allowed') {
+        msg = "Login com Google não está ativado no console do Firebase.";
+      } else if (err.code === 'auth/api-key-not-valid') {
+        msg = "Chave de API do Firebase inválida ou ausente.";
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        msg = "O pop-up foi fechado antes de completar o login.";
+      }
+      
+      setAuthError(msg);
+      toast({
+        variant: "destructive",
+        title: "Erro na autenticação",
+        description: msg
+      });
+    } finally {
+      setIsAuthProcessing(false);
+    }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
     setIsAuthProcessing(true);
+    setAuthError(null);
 
     try {
       if (authMode === 'signup') {
@@ -129,10 +151,12 @@ export default function Home() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
+      const msg = err.code === 'auth/invalid-credential' ? "E-mail ou senha inválidos." : err.message;
+      setAuthError(msg);
       toast({
         variant: "destructive",
         title: "Erro na autenticação",
-        description: err.message || "E-mail ou senha inválidos."
+        description: msg
       });
     } finally {
       setIsAuthProcessing(false);
@@ -237,7 +261,15 @@ export default function Home() {
               <CardDescription>Gerencie suas finanças com facilidade e IA.</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {authError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle className="text-xs">Falha no Login</AlertTitle>
+                <AlertDescription className="text-xs">{authError}</AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleEmailAuth} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
@@ -310,7 +342,10 @@ export default function Home() {
             <Button 
               variant="link" 
               className="w-full text-slate-500" 
-              onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+              onClick={() => {
+                setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                setAuthError(null);
+              }}
             >
               {authMode === 'login' ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
             </Button>
