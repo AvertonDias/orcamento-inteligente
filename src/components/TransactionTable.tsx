@@ -3,14 +3,6 @@
 
 import React, { useState } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,10 +22,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Transaction } from '@/app/lib/types';
 import { formatCurrency, formatDate } from '@/app/lib/formatters';
-import { ArrowUpCircle, ArrowDownCircle, Trash2, Ban, History, Landmark, CreditCard, User } from 'lucide-react';
+import { 
+  ArrowUpCircle, 
+  ArrowDownCircle, 
+  Trash2, 
+  Ban, 
+  History, 
+  Landmark, 
+  CreditCard, 
+  User,
+  Calendar,
+  Tag
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -90,77 +92,82 @@ export function TransactionTable({
 
   return (
     <>
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead className="w-[120px]">Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead className="w-[120px]">Banco</TableHead>
-              <TableHead className="w-[180px]">Categoria</TableHead>
-              <TableHead className="w-[120px]">Valor</TableHead>
-              <TableHead className="w-[120px] text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((t) => (
-              <TableRow key={t.id} className={`group transition-colors ${t.isIgnored ? 'opacity-60 bg-slate-50/50' : ''}`}>
-                <TableCell className="font-medium text-sm text-muted-foreground">
-                  {formatDate(t.date)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {t.type === 'receita' ? (
-                      <ArrowUpCircle className="h-4 w-4 text-emerald-500 shrink-0" />
-                    ) : (
-                      <ArrowDownCircle className="h-4 w-4 text-rose-500 shrink-0" />
-                    )}
+      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+        {/* Cabeçalho Simplificado */}
+        <div className="bg-slate-50/80 px-4 py-2 border-b text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+          <span className="flex-1">Detalhes da Transação</span>
+          <span className="w-[100px] text-right">Valor</span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {transactions.map((t) => (
+            <div 
+              key={t.id} 
+              className={`p-4 hover:bg-slate-50/50 transition-colors group relative ${t.isIgnored ? 'opacity-60 grayscale-[0.5]' : ''}`}
+            >
+              <div className="flex gap-4 items-start">
+                {/* Ícone de Tipo */}
+                <div className="mt-1 shrink-0">
+                  {t.type === 'receita' ? (
+                    <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
+                  ) : (
+                    <ArrowDownCircle className="h-5 w-5 text-rose-500" />
+                  )}
+                </div>
+
+                {/* Bloco de Conteúdo Principal */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  {/* Descrição em uma linha inteira para ela */}
+                  <div className="w-full">
                     <Input
                       value={t.description}
                       onChange={(e) => onUpdate(t.id, { description: e.target.value })}
-                      className="border-none bg-transparent h-8 p-0 focus-visible:ring-0 focus-visible:bg-white px-2 hover:bg-muted/50 rounded"
+                      className="border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-base w-full overflow-visible whitespace-normal break-words"
                       disabled={isIgnoredList}
                     />
                   </div>
-                </TableCell>
-                <TableCell>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-default">
-                          {getBankIcon(t.bank)}
-                          <span className="text-xs font-medium text-muted-foreground uppercase">{getBankName(t.bank)}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Conta: {getBankName(t.bank)}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={t.category}
-                    onValueChange={(val) => handleCategorySelection(t.id, t.description, val)}
-                    disabled={isIgnoredList}
-                  >
-                    <SelectTrigger className="h-8 border-none bg-transparent hover:bg-muted/50 focus:ring-0 shadow-none">
-                      <SelectValue placeholder="Categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className={`font-semibold ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
+
+                  {/* Metadados (Data, Banco, Categoria) */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>{formatDate(t.date)}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 px-2 py-0.5 rounded-full">
+                      {getBankIcon(t.bank)}
+                      <span className="font-medium">{getBankName(t.bank)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 min-w-[140px]">
+                      <Tag className="h-3.5 w-3.5 shrink-0" />
+                      <Select
+                        value={t.category}
+                        onValueChange={(val) => handleCategorySelection(t.id, t.description, val)}
+                        disabled={isIgnoredList}
+                      >
+                        <SelectTrigger className="h-6 border-none bg-transparent hover:bg-slate-100 focus:ring-0 shadow-none text-xs font-medium px-1">
+                          <SelectValue placeholder="Categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bloco de Valor e Ações */}
+                <div className="flex flex-col items-end justify-between self-stretch shrink-0 min-w-[120px]">
+                  <div className={`font-bold text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
+                  </div>
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <TooltipProvider>
                       {!isIgnoredList ? (
                         <>
@@ -169,7 +176,7 @@ export function TransactionTable({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-orange-500"
+                                className="h-8 w-8 text-slate-400 hover:text-orange-500 hover:bg-orange-50"
                                 onClick={() => onUpdate(t.id, { isIgnored: true })}
                               >
                                 <Ban className="h-4 w-4" />
@@ -184,13 +191,13 @@ export function TransactionTable({
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-slate-400 hover:text-orange-600"
+                                  className="h-8 w-8 text-slate-400 hover:text-orange-600 hover:bg-orange-100"
                                   onClick={() => onIgnoreSimilar(t.description)}
                                 >
                                   <History className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Ignorar em todos os meses</TooltipContent>
+                              <TooltipContent>Ignorar similares sempre</TooltipContent>
                             </Tooltip>
                           )}
                         </>
@@ -200,7 +207,7 @@ export function TransactionTable({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-primary"
+                              className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10"
                               onClick={() => onUpdate(t.id, { isIgnored: false })}
                             >
                               <ArrowUpCircle className="h-4 w-4 rotate-180" />
@@ -214,17 +221,17 @@ export function TransactionTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-slate-400 hover:text-destructive"
+                      className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10"
                       onClick={() => onDelete(t.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <AlertDialog open={!!pendingCategoryUpdate} onOpenChange={(open) => !open && setPendingCategoryUpdate(null)}>
