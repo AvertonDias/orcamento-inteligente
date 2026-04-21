@@ -28,6 +28,7 @@ export async function suggestTransactionCategory(input: SuggestTransactionCatego
 
 const prompt = ai.definePrompt({
   name: 'suggestTransactionCategoryPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: SuggestTransactionCategoryInputSchema },
   output: { schema: SuggestTransactionCategoryOutputSchema },
   prompt: `Você é um assistente financeiro especializado. Sugira uma categoria única e curta (ex: Alimentação, Transporte, Lazer) para a transação abaixo.

@@ -48,34 +48,25 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
     return dateStr;
   };
 
-  /**
-   * Converte uma string de valor (ex: "79,90" ou "7.990,00" ou "79.90") em número.
-   */
   const parseAmount = (val: string) => {
     if (!val) return 0;
     
-    // Remove símbolos de moeda e espaços
     let clean = val.trim().replace(/[R$\s]/g, '');
 
-    // Lógica para detectar o formato decimal
-    // Se tem vírgula, tratamos como formato brasileiro (vírgula é decimal)
     if (clean.includes(',')) {
-      clean = clean.replace(/\./g, ''); // Remove separador de milhar (ponto)
-      clean = clean.replace(',', '.');   // Transforma vírgula em ponto decimal
+      clean = clean.replace(/\./g, '');
+      clean = clean.replace(',', '.');
     }
     
     const result = parseFloat(clean);
     return isNaN(result) ? 0 : result;
   };
 
-  /**
-   * Limpa a descrição removendo padrões de data comuns em extratos (Ex: 06/03/2026)
-   */
   const cleanDescription = (desc: string) => {
     return desc
-      .replace(/\d{2}\/\d{2}\/\d{4}/g, '') // Remove DD/MM/AAAA
-      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')   // Remove DD/MM/AA
-      .replace(/\s\s+/g, ' ')               // Remove espaços duplos
+      .replace(/\d{2}\/\d{2}\/\d{4}/g, '')
+      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')
+      .replace(/\s\s+/g, ' ')
       .trim();
   };
 
@@ -97,7 +88,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const lines = content.split('\n');
         const newTransactions: Transaction[] = [];
 
-        // Pular cabeçalho
         const startIndex = 1;
 
         for (let i = startIndex; i < lines.length; i++) {

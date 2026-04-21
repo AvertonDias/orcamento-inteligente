@@ -216,6 +216,7 @@ export default function Home() {
     if (!db || !user) return;
     const colRef = collection(db, 'users', user.uid, 'transactions');
     
+    // Verificação de duplicatas baseada em data, descrição, valor, banco e tipo
     const existingFingerprints = new Set(
       transactions.map(t => `${t.date}_${t.description.trim()}_${t.amount.toFixed(2)}_${t.bank}_${t.type}`)
     );
