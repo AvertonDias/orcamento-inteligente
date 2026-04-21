@@ -55,6 +55,8 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -100,18 +102,22 @@ export default function Home() {
                             t.category.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
       const matchesType = typeFilter === 'all' || t.type === typeFilter;
-      return matchesMonth && matchesSearch && matchesCategory && matchesType;
+      const matchesDateRange = (!startDate || t.date >= startDate) && 
+                               (!endDate || t.date <= endDate);
+      return matchesMonth && matchesSearch && matchesCategory && matchesType && matchesDateRange;
     });
-  }, [activeTransactions, selectedMonth, search, categoryFilter, typeFilter]);
+  }, [activeTransactions, selectedMonth, search, categoryFilter, typeFilter, startDate, endDate]);
 
   const filteredIgnored = useMemo(() => {
     return ignoredTransactions.filter((t) => {
       const dateObj = new Date(t.date);
       const matchesMonth = typeof selectedMonth === 'number' ? dateObj.getMonth() === selectedMonth : true;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase());
-      return matchesMonth && matchesSearch;
+      const matchesDateRange = (!startDate || t.date >= startDate) && 
+                               (!endDate || t.date <= endDate);
+      return matchesMonth && matchesSearch && matchesDateRange;
     });
-  }, [ignoredTransactions, selectedMonth, search]);
+  }, [ignoredTransactions, selectedMonth, search, startDate, endDate]);
 
   const handleAdd = (data: Omit<Transaction, 'id'>) => {
     if (!db || !user) return;
@@ -254,6 +260,8 @@ export default function Home() {
     setSearch('');
     setCategoryFilter('all');
     setTypeFilter('all');
+    setStartDate('');
+    setEndDate('');
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -311,6 +319,8 @@ export default function Home() {
                       search={search} setSearch={setSearch} 
                       category={categoryFilter} setCategory={setCategoryFilter} 
                       type={typeFilter} setType={setTypeFilter} 
+                      startDate={startDate} setStartDate={setStartDate}
+                      endDate={endDate} setEndDate={setEndDate}
                       onClear={clearFilters} categories={categories}
                     />
                     {dataLoading ? (
