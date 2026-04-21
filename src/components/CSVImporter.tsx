@@ -130,7 +130,8 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       e.target.value = '';
     };
 
-    reader.readAsText(file, 'UTF-8');
+    // Usando ISO-8859-1 para suportar acentos de extratos bancários brasileiros
+    reader.readAsText(file, 'ISO-8859-1');
   };
 
   return (
