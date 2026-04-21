@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -165,7 +166,7 @@ export function TransactionTable({
                     {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1">
                     <TooltipProvider>
                       {!isIgnoredList ? (
                         <>
