@@ -64,8 +64,10 @@ export function AuthView({ auth }: AuthViewProps) {
         return 'Formato de e-mail inválido.';
       case 'auth/popup-closed-by-user':
         return 'A janela de login do Google foi fechada antes de concluir.';
+      case 'auth/too-many-requests':
+        return 'Muitas tentativas bloqueadas. Tente novamente mais tarde.';
       default:
-        return 'Ocorreu um erro inesperado. Tente novamente em instantes.';
+        return 'Ocorreu um erro inesperado. Verifique sua conexão e tente novamente.';
     }
   };
 
@@ -113,7 +115,7 @@ export function AuthView({ auth }: AuthViewProps) {
     if (!auth) return;
     
     if (!email) {
-      setAuthError("Digite seu e-mail para receber o link de recuperação.");
+      setAuthError("Digite seu e-mail acima para receber o link de recuperação.");
       return;
     }
     
@@ -123,8 +125,8 @@ export function AuthView({ auth }: AuthViewProps) {
       await sendPasswordResetEmail(auth, email);
       setResetSent(true);
       toast({
-        title: "E-mail de recuperação enviado",
-        description: "Verifique sua caixa de entrada e spam."
+        title: "E-mail enviado!",
+        description: `Verifique a caixa de entrada de ${email}.`
       });
     } catch (err: any) {
       setAuthError(getFriendlyErrorMessage(err.code));
@@ -154,8 +156,11 @@ export function AuthView({ auth }: AuthViewProps) {
           {resetSent && (
             <Alert className="bg-emerald-50 border-emerald-200 text-emerald-800">
               <MailCheck className="h-4 w-4 text-emerald-600" />
-              <AlertTitle>Sucesso</AlertTitle>
-              <AlertDescription>Link de recuperação enviado para {email}.</AlertDescription>
+              <AlertTitle>E-mail de recuperação enviado!</AlertTitle>
+              <AlertDescription className="text-xs">
+                Verifique sua caixa de entrada e **principalmente sua pasta de SPAM**. 
+                O link foi enviado para: <strong>{email}</strong>
+              </AlertDescription>
             </Alert>
           )}
 
@@ -170,6 +175,7 @@ export function AuthView({ auth }: AuthViewProps) {
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (authError) setAuthError(null);
+                  if (resetSent) setResetSent(false);
                 }} 
                 required 
               />
