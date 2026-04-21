@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, CreditCard, Landmark } from 'lucide-react';
 import { Transaction, TransactionType } from '@/app/lib/types';
 import { suggestTransactionCategory } from '@/ai/flows/sugestao-categoria-transacao';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
   };
 
   const parseDate = (dateStr: string) => {
+    if (!dateStr) return '';
     const parts = dateStr.split('/');
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
@@ -67,7 +69,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const lines = content.split('\n');
         const newTransactions: Transaction[] = [];
 
-        // Ignora o cabeçalho
+        // Skip header
         const startIndex = 1;
 
         for (let i = startIndex; i < lines.length; i++) {
@@ -81,7 +83,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           let valorOriginal = '';
 
           if (activeBank === 'bb') {
-            // BB CSV structure: Data, Lançamento, Detalhes, Número documento, Valor
             if (parts.length < 5) continue;
             rawDate = parts[0];
             const lancamento = parts[1];
@@ -93,7 +94,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             }
             fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
           } else if (activeBank === 'nubank') {
-            // Nubank CSV structure (based on image): Data, Valor, Identificador, Descrição
             if (parts.length < 4) continue;
             rawDate = parts[0];
             valorOriginal = parts[1];
@@ -104,7 +104,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
 
           const isoDate = parseDate(rawDate);
           
-          // Tratamento de valor (converte "1.299,58" ou "-28,25" para float)
           const amountStr = valorOriginal
             .replace(/\./g, '')
             .replace(',', '.')
@@ -125,11 +124,11 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             });
             category = suggestion.suggestedCategory;
           } catch (error) {
-            // IA falhou ou offline, mantém categoria padrão
+            // Keep default category on AI failure
           }
 
           newTransactions.push({
-            id: Math.random().toString(36).substr(2, 9),
+            id: Math.random().toString(36).substring(2, 11),
             date: isoDate,
             description: fullDescription,
             amount: Math.abs(amount),
@@ -166,7 +165,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       }
     };
 
-    // BB costuma usar ISO-8859-1, Nubank geralmente usa UTF-8
     const encoding = activeBank === 'bb' ? 'ISO-8859-1' : 'UTF-8';
     reader.readAsText(file, encoding);
   };
@@ -186,12 +184,12 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         size="sm"
         onClick={() => handleButtonClick('bb')}
         disabled={isProcessing}
-        className="relative overflow-hidden gap-2"
+        className="relative overflow-hidden gap-2 min-w-[140px]"
       >
         {isProcessing && activeBank === 'bb' ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Upload className="h-4 w-4" />
+          <Landmark className="h-4 w-4 text-primary" />
         )}
         <span>Extrato BB</span>
       </Button>
@@ -201,12 +199,12 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         size="sm"
         onClick={() => handleButtonClick('nubank')}
         disabled={isProcessing}
-        className="relative overflow-hidden gap-2"
+        className="relative overflow-hidden gap-2 min-w-[140px]"
       >
         {isProcessing && activeBank === 'nubank' ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Upload className="h-4 w-4" />
+          <CreditCard className="h-4 w-4 text-accent" />
         )}
         <span>Extrato Nubank</span>
       </Button>

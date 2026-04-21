@@ -85,7 +85,8 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
+  // Initialize with 'all' or null to avoid hydration mismatch
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
 
   // Auth States
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
@@ -96,6 +97,11 @@ export default function Home() {
 
   // Settings State
   const [newCategoryName, setNewCategoryName] = useState('');
+
+  // Set current month only after hydration
+  useEffect(() => {
+    setSelectedMonth(new Date().getMonth());
+  }, []);
 
   // Handle Redirect Result
   useEffect(() => {
@@ -108,7 +114,7 @@ export default function Home() {
       })
       .catch((err: any) => {
         if (err.code === 'auth/api-key-not-valid' || err.code === 'auth/invalid-api-key') {
-          setAuthError("Chave de API inválida ou domínio não autorizado. Verifique as configurações no Console do Firebase.");
+          setAuthError("Domínio não autorizado. Adicione a URL atual em 'Domínios Autorizados' no Console do Firebase.");
         } else if (err.code !== 'auth/popup-closed-by-user') {
           setAuthError(err.message);
         }
@@ -125,7 +131,6 @@ export default function Home() {
 
   const { data: transactions = [], isLoading: dataLoading } = useCollection(transactionsQuery);
 
-  // User Settings
   const settingsRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'users', user.uid, 'settings', 'config');
@@ -385,15 +390,45 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-slate-50/50">
       <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2"><div className="bg-primary p-1.5 rounded-lg"><LayoutDashboard className="h-5 w-5 text-white" /></div><h1 className="text-xl font-bold text-primary">Orçamento Inteligente</h1></div>
-          <div className="flex items-center gap-3"><TransactionDialog onAdd={handleAdd} categories={categories} /><CSVImporter onImport={handleImport} /><Button variant="ghost" size="icon" onClick={handleLogout}><LogOut className="h-4 w-4" /></Button></div>
+          <div className="flex items-center gap-2">
+            <div className="bg-primary p-1.5 rounded-lg">
+              <LayoutDashboard className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-primary">Orçamento Inteligente</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <TransactionDialog onAdd={handleAdd} categories={categories} />
+            <CSVImporter onImport={handleImport} />
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="bg-slate-800 text-white overflow-x-auto border-b">
         <div className="max-w-7xl mx-auto px-4 flex">
-          <button onClick={() => setSelectedMonth('all')} className={cn("px-4 py-3 text-sm font-medium border-b-2 border-transparent", selectedMonth === 'all' && "border-primary text-primary")}>Todos</button>
-          {MONTHS.map((month, index) => (<button key={month} onClick={() => setSelectedMonth(index)} className={cn("px-4 py-3 text-sm font-medium border-b-2 border-transparent", selectedMonth === index && "border-primary text-primary")}>{month}</button>))}
+          <button 
+            onClick={() => setSelectedMonth('all')} 
+            className={cn(
+              "px-4 py-3 text-sm font-medium border-b-2 border-transparent transition-colors", 
+              selectedMonth === 'all' && "border-primary text-primary bg-white/5"
+            )}
+          >
+            Todos
+          </button>
+          {MONTHS.map((month, index) => (
+            <button 
+              key={month} 
+              onClick={() => setSelectedMonth(index)} 
+              className={cn(
+                "px-4 py-3 text-sm font-medium border-b-2 border-transparent transition-colors", 
+                selectedMonth === index && "border-primary text-primary bg-white/5"
+              )}
+            >
+              {month}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -405,7 +440,7 @@ export default function Home() {
             <TabsTrigger value="settings"><SettingsIcon className="h-4 w-4 mr-2" />Configurações</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dashboard" className="space-y-8">
+          <TabsContent value="dashboard" className="space-y-8 outline-none">
             <DashboardSummary transactions={filteredActive} />
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-4">
@@ -447,11 +482,11 @@ export default function Home() {
             )}
           </TabsContent>
 
-          <TabsContent value="annual">
+          <TabsContent value="annual" className="outline-none">
             <AnnualSummaryView transactions={activeTransactions} />
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="settings" className="outline-none">
             <div className="max-w-4xl grid gap-6 md:grid-cols-2">
               <Card className="border-none shadow-md">
                 <CardHeader>
