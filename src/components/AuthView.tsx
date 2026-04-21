@@ -28,7 +28,6 @@ export function AuthView({ auth }: AuthViewProps) {
     setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
-      // Usando signInWithPopup em vez de Redirect para evitar erros de init.json 404 em ambiente de dev
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       setAuthError(err.message);

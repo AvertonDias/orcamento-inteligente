@@ -64,7 +64,8 @@
                   "type": "object",
                   "properties": {
                     "name": { "type": "string" },
-                    "value": { "type": "number" }
+                    "value": { "type": "number" },
+                    "type": { "type": "string", "enum": ["plus", "minus"] }
                   }
                 }
               }
