@@ -130,8 +130,13 @@ export default function Home() {
     try {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      console.error("Erro no login Google:", err);
-      setAuthError(err.message || "Não foi possível abrir o login do Google.");
+      if (err.code === 'auth/popup-closed-by-user') {
+        setAuthError("O pop-up de login foi fechado ou bloqueado pelo navegador. Verifique se os 'Domínios Autorizados' estão configurados no console do Firebase.");
+      } else if (err.code === 'auth/api-key-not-valid') {
+        setAuthError("Chave de API inválida. Verifique sua configuração no arquivo de configuração do Firebase.");
+      } else {
+        setAuthError(err.message || "Não foi possível realizar o login com Google.");
+      }
     } finally {
       setIsAuthProcessing(false);
     }
@@ -250,7 +255,12 @@ export default function Home() {
             <CardTitle className="text-2xl font-bold">Orçamento Inteligente</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {authError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{authError}</AlertDescription></Alert>}
+            {authError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleEmailAuth} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>

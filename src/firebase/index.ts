@@ -31,7 +31,6 @@ export function initializeFirebase(): {
 
     return { firebaseApp, firestore, auth };
   } catch (error) {
-    console.error("Erro ao inicializar o Firebase:", error);
     return { firebaseApp: null, firestore: null, auth: null };
   }
 }
