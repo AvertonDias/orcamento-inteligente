@@ -55,7 +55,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
   const [activeTab, setActiveTab] = useState('dashboard');
 
