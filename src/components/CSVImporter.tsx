@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -40,7 +39,10 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
   const parseDate = (dateStr: string) => {
     const parts = dateStr.split('/');
     if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+      return `${year}-${month}-${day}`;
     }
     return dateStr;
   };
@@ -57,6 +59,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
       const lines = content.split('\n');
       const newTransactions: Transaction[] = [];
 
+      // Pula o cabeçalho
       const startIndex = 1;
 
       for (let i = startIndex; i < lines.length; i++) {
@@ -71,30 +74,38 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const detalhes = parts[2];
         const valorOriginal = parts[4];
 
-        if (rawDate === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
+        // Ignora campos inválidos ou de saldo
+        if (!rawDate || rawDate === '00/00/0000' || lancamento.toLowerCase().includes('saldo')) {
           continue;
         }
 
         const isoDate = parseDate(rawDate);
+        
+        // Limpa o valor para conversão numérica
         const amountStr = valorOriginal
           .replace(/\./g, '')
           .replace(',', '.')
           .replace(/[^\d.-]/g, '');
         
         const amount = parseFloat(amountStr);
-        if (isNaN(amount)) continue;
+        
+        // IGNORAR campos com valor 0 ou NaN
+        if (isNaN(amount) || amount === 0) {
+          continue;
+        }
 
         const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
         const fullDescription = detalhes ? `${lancamento} - ${detalhes}` : lancamento;
 
         let category = 'Outros';
         try {
+          // A IA usa a descrição completa para sugerir a melhor categoria
           const suggestion = await suggestTransactionCategory({
             description: fullDescription,
           });
           category = suggestion.suggestedCategory;
         } catch (error) {
-          // Fallback silencioso
+          // Fallback silencioso para 'Outros' em caso de erro na IA
         }
 
         newTransactions.push({
@@ -107,11 +118,14 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         });
       }
 
+      // Ordena por data antes de importar
+      newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
       onImport(newTransactions);
       setIsProcessing(false);
       toast({
         title: "Importação concluída",
-        description: `${newTransactions.length} transações foram importadas com sucesso.`
+        description: `${newTransactions.length} transações válidas foram importadas e organizadas por data.`
       });
       e.target.value = '';
     };
