@@ -12,7 +12,8 @@
         "amount": { "type": "number" },
         "category": { "type": "string" },
         "type": { "type": "string", "enum": ["receita", "despesa"] },
-        "userId": { "type": "string" }
+        "userId": { "type": "string" },
+        "isIgnored": { "type": "boolean", "description": "Define se a transação deve ser ignorada nos cálculos." }
       },
       "required": ["date", "description", "amount", "category", "type", "userId"]
     }

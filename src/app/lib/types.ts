@@ -8,6 +8,7 @@ export interface Transaction {
   amount: number;
   category: string;
   type: TransactionType;
+  isIgnored?: boolean;
 }
 
 export const DEFAULT_CATEGORIES = [
