@@ -1,15 +1,17 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DashboardSummary } from '@/components/DashboardSummary';
 import { TransactionTable } from '@/components/TransactionTable';
 import { CSVImporter } from '@/components/CSVImporter';
 import { TransactionFilters } from '@/components/TransactionFilters';
 import { FinanceChart } from '@/components/FinanceChart';
+import { AnnualSummaryView } from '@/components/AnnualSummaryView';
 import { Transaction } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { PieChart, List, LayoutDashboard, Settings, User } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PieChart, List, LayoutDashboard, Settings, User, BarChart3 } from 'lucide-react';
 
 export default function Home() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -17,7 +19,6 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  // Filter transactions based on UI state
   const filteredTransactions = transactions.filter((t) => {
     const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase()) || 
                           t.category.toLowerCase().includes(search.toLowerCase());
@@ -47,90 +48,94 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen flex flex-col bg-slate-50/50">
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary p-1.5 rounded-lg">
               <LayoutDashboard className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold font-headline tracking-tight text-primary">
+            <h1 className="text-xl font-bold tracking-tight text-primary">
               Orçamento Inteligente
             </h1>
           </div>
           <div className="flex items-center gap-4">
             <CSVImporter onImport={handleImport} />
-            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center cursor-pointer">
+            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
               <User className="h-4 w-4 text-primary" />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Sidebar-like layout on large screens */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full px-4 py-8 gap-8">
-        
-        {/* Main Content */}
-        <div className="flex-1 space-y-8 animate-in fade-in duration-500">
-          
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-primary" />
-                Resumo do Período
-              </h2>
-            </div>
-            <DashboardSummary transactions={filteredTransactions} />
-          </section>
-
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* List and Filters */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <List className="h-4 w-4 text-primary" />
-                  Transações
-                </h2>
-              </div>
-
-              <TransactionFilters 
-                search={search}
-                setSearch={setSearch}
-                category={categoryFilter}
-                setCategory={setCategoryFilter}
-                type={typeFilter}
-                setType={setTypeFilter}
-                onClear={clearFilters}
-              />
-
-              <TransactionTable 
-                transactions={filteredTransactions} 
-                onUpdate={handleUpdate} 
-                onDelete={handleDelete}
-              />
-            </div>
-
-            {/* Sidebar Charts */}
-            <aside className="space-y-8">
-              <section className="space-y-4">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-primary" />
-                  Análise
-                </h2>
-                <FinanceChart transactions={filteredTransactions} />
-              </section>
-
-              <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
-                <h3 className="font-semibold text-primary mb-2">Dica Inteligente</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Sua categorização automática é feita via IA. Ajuste as categorias para treinar sua visão financeira!
-                </p>
-              </div>
-            </aside>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+        <Tabs defaultValue="dashboard" className="space-y-8">
+          <div className="flex items-center justify-between border-b pb-4">
+            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                Lançamentos
+              </TabsTrigger>
+              <TabsTrigger value="annual" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Resumo Anual
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
-      </div>
+
+          <TabsContent value="dashboard" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-primary" />
+                  Resumo do Período
+                </h2>
+              </div>
+              <DashboardSummary transactions={filteredTransactions} />
+            </section>
+
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-4">
+                <TransactionFilters 
+                  search={search}
+                  setSearch={setSearch}
+                  category={categoryFilter}
+                  setCategory={setCategoryFilter}
+                  type={typeFilter}
+                  setType={setTypeFilter}
+                  onClear={clearFilters}
+                />
+                <TransactionTable 
+                  transactions={filteredTransactions} 
+                  onUpdate={handleUpdate} 
+                  onDelete={handleDelete}
+                />
+              </div>
+
+              <aside className="space-y-8">
+                <section className="space-y-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-primary" />
+                    Análise por Categoria
+                  </h2>
+                  <FinanceChart transactions={filteredTransactions} />
+                </section>
+
+                <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
+                  <h3 className="font-semibold text-primary mb-2">Dica Financeira</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Mantenha suas despesas categorizadas para que a IA possa aprender seus padrões e sugerir orçamentos melhores.
+                  </p>
+                </div>
+              </aside>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="annual" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <AnnualSummaryView transactions={transactions} />
+          </TabsContent>
+        </Tabs>
+      </main>
 
       <Toaster />
       
