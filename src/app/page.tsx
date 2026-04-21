@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '@/components/DashboardSummary';
 import { TransactionTable } from '@/components/TransactionTable';
 import { TransactionFilters } from '@/components/TransactionFilters';
@@ -13,6 +13,7 @@ import { MonthSelector } from '@/components/MonthSelector';
 import { SettingsView } from '@/components/SettingsView';
 import { Transaction, DEFAULT_CATEGORIES } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2,
   EyeOff
@@ -50,7 +51,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState<number | 'annual' | 'settings'>(new Date().getMonth());
+  const [selectedMonth, setSelectedMonth] = useState<number | 'annual'>(new Date().getMonth());
 
   const transactionsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -83,7 +84,7 @@ export default function Home() {
   const filteredActive = useMemo(() => {
     return activeTransactions.filter((t) => {
       const dateObj = new Date(t.date);
-      const matchesMonth = typeof selectedMonth === 'number' && dateObj.getMonth() === selectedMonth;
+      const matchesMonth = typeof selectedMonth === 'number' ? dateObj.getMonth() === selectedMonth : true;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase()) || 
                             t.category.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || t.category === categoryFilter;
@@ -95,7 +96,7 @@ export default function Home() {
   const filteredIgnored = useMemo(() => {
     return ignoredTransactions.filter((t) => {
       const dateObj = new Date(t.date);
-      const matchesMonth = typeof selectedMonth === 'number' && dateObj.getMonth() === selectedMonth;
+      const matchesMonth = typeof selectedMonth === 'number' ? dateObj.getMonth() === selectedMonth : true;
       const matchesSearch = t.description.toLowerCase().includes(search.toLowerCase());
       return matchesMonth && matchesSearch;
     });
@@ -257,61 +258,78 @@ export default function Home() {
         onImport={handleImport} 
       />
 
-      <MonthSelector 
-        selectedMonth={selectedMonth} 
-        onSelect={setSelectedMonth} 
-      />
+      <Tabs defaultValue="dashboard" className="w-full flex flex-col flex-1">
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 pt-4">
+            <TabsList className="bg-slate-100 p-1">
+              <TabsTrigger value="dashboard" className="px-6">Meus Lançamentos</TabsTrigger>
+              <TabsTrigger value="settings" className="px-6">Configurações</TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
-        {selectedMonth === 'annual' ? (
-          <AnnualSummaryView transactions={activeTransactions} />
-        ) : selectedMonth === 'settings' ? (
-          <SettingsView 
-            user={user} 
-            categories={categories} 
-            onAddCategory={handleAddCategory} 
-            onRemoveCategory={handleRemoveCategory} 
-            onResetCategories={handleResetCategories} 
+        <TabsContent value="dashboard" className="flex-1 flex flex-col m-0">
+          <MonthSelector 
+            selectedMonth={selectedMonth} 
+            onSelect={setSelectedMonth} 
           />
-        ) : (
-          <div className="space-y-8">
-            <DashboardSummary transactions={filteredActive} />
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-4">
-                <TransactionFilters 
-                  search={search} setSearch={setSearch} 
-                  category={categoryFilter} setCategory={setCategoryFilter} 
-                  type={typeFilter} setType={setTypeFilter} 
-                  onClear={clearFilters} categories={categories}
-                />
-                {dataLoading ? (
-                  <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                ) : (
-                  <TransactionTable 
-                    transactions={filteredActive} onUpdate={handleUpdate} onDelete={handleDelete} 
-                    onIgnoreSimilar={handleIgnoreSimilar} onUpdateSimilarCategory={handleUpdateSimilarCategory}
-                    categories={categories}
-                  />
+
+          <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8 space-y-8">
+            {selectedMonth === 'annual' ? (
+              <AnnualSummaryView transactions={activeTransactions} />
+            ) : (
+              <div className="space-y-8">
+                <DashboardSummary transactions={filteredActive} />
+                <div className="grid gap-8 lg:grid-cols-3">
+                  <div className="lg:col-span-2 space-y-4">
+                    <TransactionFilters 
+                      search={search} setSearch={setSearch} 
+                      category={categoryFilter} setCategory={setCategoryFilter} 
+                      type={typeFilter} setType={setTypeFilter} 
+                      onClear={clearFilters} categories={categories}
+                    />
+                    {dataLoading ? (
+                      <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                    ) : (
+                      <TransactionTable 
+                        transactions={filteredActive} onUpdate={handleUpdate} onDelete={handleDelete} 
+                        onIgnoreSimilar={handleIgnoreSimilar} onUpdateSimilarCategory={handleUpdateSimilarCategory}
+                        categories={categories}
+                      />
+                    )}
+                  </div>
+                  <aside><FinanceChart transactions={filteredActive} /></aside>
+                </div>
+
+                {ignoredTransactions.length > 0 && filteredIgnored.length > 0 && (
+                  <section className="pt-12 mt-12 border-t">
+                    <div className="flex items-center gap-2 mb-6 text-slate-400">
+                      <EyeOff className="h-5 w-5" />
+                      <h2 className="text-lg font-semibold">Transações Ignoradas (Mês Selecionado)</h2>
+                    </div>
+                    <TransactionTable 
+                      transactions={filteredIgnored} onUpdate={handleUpdate} onDelete={handleDelete}
+                      isIgnoredList={true} categories={categories}
+                    />
+                  </section>
                 )}
               </div>
-              <aside><FinanceChart transactions={filteredActive} /></aside>
-            </div>
-
-            {ignoredTransactions.length > 0 && filteredIgnored.length > 0 && (
-              <section className="pt-12 mt-12 border-t">
-                <div className="flex items-center gap-2 mb-6 text-slate-400">
-                  <EyeOff className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Transações Ignoradas (Mês Selecionado)</h2>
-                </div>
-                <TransactionTable 
-                  transactions={filteredIgnored} onUpdate={handleUpdate} onDelete={handleDelete}
-                  isIgnoredList={true} categories={categories}
-                />
-              </section>
             )}
-          </div>
-        )}
-      </main>
+          </main>
+        </TabsContent>
+
+        <TabsContent value="settings" className="flex-1 m-0">
+          <main className="max-w-7xl mx-auto w-full px-4 py-8">
+            <SettingsView 
+              user={user} 
+              categories={categories} 
+              onAddCategory={handleAddCategory} 
+              onRemoveCategory={handleRemoveCategory} 
+              onResetCategories={handleResetCategories} 
+            />
+          </main>
+        </TabsContent>
+      </Tabs>
       <Toaster />
     </div>
   );

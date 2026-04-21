@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { BarChart3, Settings } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -11,8 +11,8 @@ const MONTHS = [
 ];
 
 interface MonthSelectorProps {
-  selectedMonth: number | 'annual' | 'settings';
-  onSelect: (month: number | 'annual' | 'settings') => void;
+  selectedMonth: number | 'annual';
+  onSelect: (month: number | 'annual') => void;
 }
 
 export function MonthSelector({ selectedMonth, onSelect }: MonthSelectorProps) {
@@ -43,17 +43,6 @@ export function MonthSelector({ selectedMonth, onSelect }: MonthSelectorProps) {
         >
           <BarChart3 className="h-4 w-4" />
           Resumo Anual
-        </button>
-
-        <button 
-          onClick={() => onSelect('settings')} 
-          className={cn(
-            "px-4 py-3 text-sm font-medium border-b-2 border-transparent transition-colors whitespace-nowrap flex items-center gap-2", 
-            selectedMonth === 'settings' && "border-primary text-primary bg-white/5"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          Configurações
         </button>
       </div>
     </div>
