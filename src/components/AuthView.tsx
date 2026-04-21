@@ -8,7 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { LayoutDashboard, LogIn, Loader2, AlertCircle, MailCheck } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  LogIn, 
+  Loader2, 
+  AlertCircle, 
+  MailCheck,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 import { 
   Auth, 
   GoogleAuthProvider, 
@@ -27,6 +35,9 @@ export function AuthView({ auth }: AuthViewProps) {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isAuthProcessing, setIsAuthProcessing] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
@@ -36,6 +47,8 @@ export function AuthView({ auth }: AuthViewProps) {
   useEffect(() => {
     setAuthError(null);
     setResetSent(false);
+    setPassword('');
+    setConfirmPassword('');
   }, [authMode]);
 
   const handleGoogleLogin = async () => {
@@ -55,6 +68,12 @@ export function AuthView({ auth }: AuthViewProps) {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) return;
+
+    if (authMode === 'signup' && password !== confirmPassword) {
+      setAuthError("As senhas não coincidem.");
+      return;
+    }
+
     setIsAuthProcessing(true);
     setAuthError(null);
     setResetSent(false);
@@ -72,7 +91,7 @@ export function AuthView({ auth }: AuthViewProps) {
   };
 
   const handleForgotPassword = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Evita qualquer comportamento de submit acidental
+    e.preventDefault();
     if (!auth) return;
     
     if (!email) {
@@ -109,7 +128,7 @@ export function AuthView({ auth }: AuthViewProps) {
           {authError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Erro de Autenticação</AlertTitle>
+              <AlertTitle>Erro</AlertTitle>
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
@@ -137,6 +156,7 @@ export function AuthView({ auth }: AuthViewProps) {
                 required 
               />
             </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
@@ -151,27 +171,67 @@ export function AuthView({ auth }: AuthViewProps) {
                   </button>
                 )}
               </div>
-              <Input 
-                id="password"
-                type="password" 
-                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                value={password} 
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (authError) setAuthError(null);
-                }} 
-                required 
-              />
+              <div className="relative">
+                <Input 
+                  id="password"
+                  type={showPassword ? "text" : "password"} 
+                  autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                  value={password} 
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (authError) setAuthError(null);
+                  }} 
+                  className="pr-10"
+                  required 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
+
+            {authMode === 'signup' && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <div className="relative">
+                  <Input 
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"} 
+                    autoComplete="new-password"
+                    value={confirmPassword} 
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (authError) setAuthError(null);
+                    }} 
+                    className="pr-10"
+                    required 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <Button type="submit" className="w-full" disabled={isAuthProcessing}>
               {isAuthProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
               {authMode === 'login' ? 'Entrar' : 'Criar Conta'}
             </Button>
           </form>
+
           <div className="relative py-2">
             <div className="absolute inset-0 flex items-center"><Separator /></div>
             <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Ou continue com</span></div>
           </div>
+
           <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={isAuthProcessing}>
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
