@@ -40,7 +40,8 @@
         "tipo": { "type": "string" },
         "category": { "type": "string" },
         "bank": { "type": "string", "enum": ["bb", "nubank", "manual"] },
-        "isIgnored": { "type": "boolean" }
+        "isIgnored": { "type": "boolean" },
+        "observations": { "type": "string" }
       },
       "required": ["id", "descricao", "valor", "data", "tipo"]
     },

@@ -31,7 +31,8 @@ import {
   CreditCard, 
   User,
   Calendar,
-  Tag
+  Tag,
+  Notebook
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -128,7 +129,28 @@ export function TransactionTable({
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+                  {/* Campo Observações */}
+                  <div className="w-full">
+                    <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                      <Notebook className="h-3 w-3" />
+                      <span className="text-[10px] font-bold uppercase tracking-tight">Observações</span>
+                    </div>
+                    <textarea
+                      value={t.observations || ''}
+                      placeholder="Adicione uma nota..."
+                      onChange={(e) => onUpdate(t.id, { observations: e.target.value })}
+                      className="w-full border-none bg-transparent h-auto p-0 text-sm text-slate-500 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all italic overflow-hidden resize-none min-h-[1.5em]"
+                      disabled={isIgnoredList}
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.currentTarget;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 pt-1">
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Calendar className="h-3.5 w-3.5" />
                       <span>{formatDate(t.date)}</span>

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
   const [category, setCategory] = useState('Outros');
   const [type, setType] = useState<TransactionType>('despesa');
   const [bank, setBank] = useState<BankType>('manual');
+  const [observations, setObservations] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +51,8 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
       date,
       category,
       type,
-      bank
+      bank,
+      observations
     });
 
     // Reset form
@@ -59,6 +62,7 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
     setCategory('Outros');
     setType('despesa');
     setBank('manual');
+    setObservations('');
     
     setLoading(false);
     setOpen(false);
@@ -150,6 +154,16 @@ export function TransactionDialog({ onAdd, categories }: TransactionDialogProps)
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="observations">Observações</Label>
+            <Textarea
+              id="observations"
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              placeholder="Notas adicionais..."
+              className="resize-none"
+            />
           </div>
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full">

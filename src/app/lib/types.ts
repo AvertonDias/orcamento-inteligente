@@ -11,6 +11,7 @@ export interface Transaction {
   type: TransactionType;
   bank?: BankType;
   isIgnored?: boolean;
+  observations?: string;
 }
 
 /**
