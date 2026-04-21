@@ -1,17 +1,15 @@
-
 'use client';
 
 /**
  * Configuração do Firebase.
  * 
- * IMPORTANTE: Para que o aplicativo funcione, você deve configurar as variáveis de ambiente 
- * no seu provedor de hospedagem ou criar um arquivo .env.local com os valores abaixo.
+ * IMPORTANTE: Exportamos o objeto firebaseConfig para que possa ser usado pela função de inicialização.
  */
 export const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? `${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseapp.com` : ""),
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
+  apiKey: "AIzaSyB0itwIN5vN7cJ73024xNbUwdKDPAjwiYw",
+  authDomain: "studio-319377216-183d5.firebaseapp.com",
+  projectId: "studio-319377216-183d5",
+  storageBucket: "studio-319377216-183d5.firebasestorage.app",
+  messagingSenderId: "29375793960",
+  appId: "1:29375793960:web:9440e42e4e4f5fb4009e1d"
 };
