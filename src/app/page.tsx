@@ -234,6 +234,14 @@ export default function Home() {
     });
   };
 
+  const handleDelete = (id: string) => {
+    if (!db || !user) return;
+    const docRef = doc(db, 'users', user.uid, 'transactions', id);
+    deleteDoc(docRef).catch(err => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+    });
+  };
+
   const handleUpdateSimilarCategory = async (description: string, category: string) => {
     if (!db || !user) return;
     const similar = (transactions || []).filter(t => t.description === description && t.category !== category);
