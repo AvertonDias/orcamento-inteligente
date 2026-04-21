@@ -122,7 +122,6 @@ export function AuthView({ auth }: AuthViewProps) {
     setIsAuthProcessing(true);
     setAuthError(null);
     try {
-      // Nota: Firebase pode retornar sucesso mesmo se o usuário não existir por segurança.
       await sendPasswordResetEmail(auth, email);
       setResetSent(true);
       toast({
@@ -135,6 +134,8 @@ export function AuthView({ auth }: AuthViewProps) {
       setIsAuthProcessing(false);
     }
   };
+
+  const hasPotentialTypo = email.toLowerCase().endsWith('.con');
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
@@ -159,12 +160,20 @@ export function AuthView({ auth }: AuthViewProps) {
               <MailCheck className="h-4 w-4 text-emerald-600" />
               <AlertTitle>Solicitação processada!</AlertTitle>
               <AlertDescription className="text-xs space-y-2">
-                <p>Se a conta <strong>{email}</strong> existe, o link foi enviado.</p>
+                <p>Se a conta <strong className="underline decoration-rose-500 decoration-2">{email}</strong> existe, o link foi enviado.</p>
+                
+                {hasPotentialTypo && (
+                  <div className="bg-rose-100 p-2 rounded border border-rose-200 text-rose-800 font-bold flex items-start gap-2 animate-bounce">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <p>Atenção: Você digitou ".con". Quis dizer ".com"?</p>
+                  </div>
+                )}
+
                 <div className="bg-white/50 p-2 rounded border border-emerald-100 mt-2">
                   <p className="font-bold">Ainda não recebeu?</p>
                   <ul className="list-disc ml-4 mt-1 space-y-1">
                     <li>Confira a pasta de <strong>SPAM</strong> ou <strong>Lixo Eletrônico</strong>.</li>
-                    <li>Verifique se o e-mail foi digitado corretamente.</li>
+                    <li>Verifique se o e-mail foi digitado corretamente (ex: .com e não .con).</li>
                     <li>Certifique-se de que você já criou uma conta com este e-mail específico.</li>
                   </ul>
                 </div>
