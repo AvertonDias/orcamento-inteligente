@@ -81,7 +81,8 @@
           "schema": {
             "type": "object",
             "properties": {
-              "categories": { "type": "array", "items": { "type": "string" } }
+              "categories": { "type": "array", "items": { "type": "string" } },
+              "ignoredDescriptions": { "type": "array", "items": { "type": "string" } }
             }
           },
           "description": "Configurações do usuário."

@@ -56,7 +56,6 @@ export default function Home() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
 
-  // Set current month only after hydration
   useEffect(() => {
     setSelectedMonth(new Date().getMonth());
   }, []);
@@ -83,6 +82,8 @@ export default function Home() {
     const cats = settings?.categories || DEFAULT_CATEGORIES;
     return [...cats].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }, [settings]);
+
+  const ignoredDescriptions = useMemo(() => settings?.ignoredDescriptions || [], [settings]);
 
   const activeTransactions = useMemo(() => transactions.filter(t => !t.isIgnored), [transactions]);
   const ignoredTransactions = useMemo(() => transactions.filter(t => t.isIgnored), [transactions]);
@@ -111,10 +112,12 @@ export default function Home() {
   const handleAdd = (data: Omit<Transaction, 'id'>) => {
     if (!db || !user) return;
     const colRef = collection(db, 'users', user.uid, 'transactions');
+    const isAutoIgnored = ignoredDescriptions.includes(data.description);
+    
     addDoc(colRef, {
       ...data,
       userId: user.uid,
-      isIgnored: false,
+      isIgnored: isAutoIgnored,
       createdAt: serverTimestamp()
     }).catch(err => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: colRef.path, operation: 'create', requestResourceData: data }));
@@ -143,10 +146,11 @@ export default function Home() {
     }
 
     uniqueNewOnes.forEach(t => {
+      const isAutoIgnored = ignoredDescriptions.includes(t.description);
       addDoc(colRef, {
         ...t,
         userId: user.uid,
-        isIgnored: false,
+        isIgnored: isAutoIgnored,
         createdAt: serverTimestamp()
       }).catch(err => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: colRef.path, operation: 'create', requestResourceData: t }));
@@ -198,7 +202,15 @@ export default function Home() {
   };
 
   const handleIgnoreSimilar = async (description: string) => {
-    if (!db || !user) return;
+    if (!db || !user || !settingsRef) return;
+    
+    // 1. Persistir nas configurações para futuras importações
+    if (!ignoredDescriptions.includes(description)) {
+      const updated = [...ignoredDescriptions, description];
+      setDoc(settingsRef, { ignoredDescriptions: updated }, { merge: true });
+    }
+
+    // 2. Atualizar transações existentes
     const similar = transactions.filter(t => t.description === description && !t.isIgnored);
     if (similar.length === 0) return;
 
@@ -210,7 +222,7 @@ export default function Home() {
 
     try {
       await batch.commit();
-      toast({ title: "Atualização concluída", description: `${similar.length} transações similares ignoradas.` });
+      toast({ title: "Ignore Permanente", description: `"${description}" será ignorado em todos os meses, incluindo futuros.` });
     } catch (err) {
       toast({ variant: "destructive", title: "Erro ao ignorar" });
     }
