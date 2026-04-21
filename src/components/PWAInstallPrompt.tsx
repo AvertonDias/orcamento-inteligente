@@ -1,27 +1,34 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X, Smartphone, Share } from 'lucide-react';
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // Detecta se é iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
     const handler = (e: any) => {
-      // Impede que o navegador mostre o prompt padrão automaticamente
       e.preventDefault();
-      // Guarda o evento para disparar depois
       setDeferredPrompt(e);
-      // Mostra o nosso banner personalizado
       setIsVisible(true);
     };
 
+    // Para Android/Desktop
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Verifica se já está instalado
+    // Para iOS, mostramos após alguns segundos se não estiver instalado
+    if (isIOSDevice && !window.matchMedia('(display-mode: standalone)').matches) {
+      const timer = setTimeout(() => setIsVisible(true), 3000);
+      return () => clearTimeout(timer);
+    }
+
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsVisible(false);
     }
@@ -31,19 +38,12 @@ export function PWAInstallPrompt() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-
-    // Mostra o prompt nativo de instalação
     deferredPrompt.prompt();
-
-    // Aguarda a resposta do usuário
     const { outcome } = await deferredPrompt.userChoice;
-    
     if (outcome === 'accepted') {
-      console.log('Usuário aceitou a instalação');
+      setDeferredPrompt(null);
+      setIsVisible(false);
     }
-
-    setDeferredPrompt(null);
-    setIsVisible(false);
   };
 
   if (!isVisible) return null;
@@ -71,22 +71,33 @@ export function PWAInstallPrompt() {
           </Button>
         </div>
         
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleInstallClick} 
-            className="flex-1 font-bold gap-2 shadow-lg shadow-primary/20"
-          >
-            <Download className="h-4 w-4" />
-            Instalar Agora
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setIsVisible(false)}
-            className="text-xs text-slate-500 font-bold border-slate-200"
-          >
-            Depois
-          </Button>
-        </div>
+        {isIOS ? (
+          <div className="bg-slate-50 p-3 rounded-lg space-y-2">
+            <p className="text-[11px] font-medium text-slate-600 flex items-center gap-2">
+              1. Toque no ícone de compartilhar <Share className="h-3 w-3 inline" />
+            </p>
+            <p className="text-[11px] font-medium text-slate-600">
+              2. Role para baixo e toque em <b>"Adicionar à Tela de Início"</b>
+            </p>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleInstallClick} 
+              className="flex-1 font-bold gap-2 shadow-lg shadow-primary/20"
+            >
+              <Download className="h-4 w-4" />
+              Instalar Agora
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsVisible(false)}
+              className="text-xs text-slate-500 font-bold border-slate-200"
+            >
+              Depois
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
