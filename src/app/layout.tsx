@@ -13,7 +13,6 @@ export default function RootLayout({
 }>) {
   
   useEffect(() => {
-    // Registra o Service Worker para habilitar PWA
     if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(
