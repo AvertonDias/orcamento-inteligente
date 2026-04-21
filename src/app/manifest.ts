@@ -12,12 +12,12 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#1e293b',
     icons: [
       {
-        src: 'https://picsum.photos/seed/appicon/192/192',
+        src: '/Logo.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: 'https://picsum.photos/seed/appicon/512/512',
+        src: '/Logo.png',
         sizes: '512x512',
         type: 'image/png',
       },

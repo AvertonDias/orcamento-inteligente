@@ -3,11 +3,12 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { TransactionDialog } from '@/components/TransactionDialog';
 import { CSVImporter } from '@/components/CSVImporter';
 import { Auth, signOut } from 'firebase/auth';
 import { Transaction } from '@/app/lib/types';
+import Image from 'next/image';
 
 interface MainHeaderProps {
   auth: Auth | null;
@@ -25,8 +26,13 @@ export function MainHeader({ auth, categories, onAdd, onImport }: MainHeaderProp
     <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="bg-primary p-1.5 rounded-lg">
-            <LayoutDashboard className="h-5 w-5 text-white" />
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
+            <Image 
+              src="/Logo.png" 
+              alt="Logo" 
+              fill
+              className="object-cover"
+            />
           </div>
           <h1 className="text-xl font-bold text-primary">Orçamento Inteligente</h1>
         </div>

@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { 
-  LayoutDashboard, 
   LogIn, 
   Loader2, 
   AlertCircle, 
@@ -26,6 +25,7 @@ import {
   sendPasswordResetEmail 
 } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 interface AuthViewProps {
   auth: Auth | null;
@@ -141,10 +141,15 @@ export function AuthView({ auth }: AuthViewProps) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
       <Card className="max-w-md w-full shadow-xl border-none">
         <CardHeader className="text-center space-y-4">
-          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
-            <LayoutDashboard className="h-8 w-8 text-primary" />
+          <div className="relative w-24 h-24 mx-auto overflow-hidden rounded-2xl shadow-lg border-4 border-white">
+            <Image 
+              src="/Logo.png" 
+              alt="Logo Aplicativo" 
+              fill
+              className="object-cover"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">Orçamento Inteligente</CardTitle>
+          <CardTitle className="text-2xl font-bold pt-2">Orçamento Inteligente</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {authError && (
@@ -170,11 +175,11 @@ export function AuthView({ auth }: AuthViewProps) {
                 )}
 
                 <div className="bg-white/50 p-2 rounded border border-emerald-100 mt-2">
-                  <p className="font-bold">Ainda não recebeu?</p>
-                  <ul className="list-disc ml-4 mt-1 space-y-1">
-                    <li>Confira a pasta de <strong>SPAM</strong> ou <strong>Lixo Eletrônico</strong>.</li>
-                    <li>Verifique se o e-mail foi digitado corretamente (ex: .com e não .con).</li>
-                    <li>Certifique-se de que você já criou uma conta com este e-mail específico.</li>
+                  <p className="font-bold text-[11px] mb-1">Dicas importantes se o e-mail não chegar:</p>
+                  <ul className="list-disc ml-4 space-y-1">
+                    <li>Verifique a pasta de <b>SPAM</b> ou <b>Promoções</b>.</li>
+                    <li>O remetente é o sistema de segurança do Google (Firebase).</li>
+                    <li>Confirme se você já criou uma conta com este e-mail.</li>
                   </ul>
                 </div>
               </AlertDescription>
