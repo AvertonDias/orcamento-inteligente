@@ -13,7 +13,8 @@ import {
   Receipt, 
   X, 
   ListOrdered,
-  ChevronDown
+  ChevronDown,
+  Search
 } from 'lucide-react';
 import { formatCurrency } from '@/app/lib/formatters';
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
@@ -202,48 +203,86 @@ export function MonthlyAdjustments({ yearMonth, transactions }: MonthlyAdjustmen
                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ajustes (Somas e Deduções)</label>
                     </div>
                     {table.items.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 group">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn(
-                            "h-8 w-8 shrink-0", 
-                            item.type === 'plus' ? "text-emerald-500 bg-emerald-50" : "text-rose-500 bg-rose-50"
-                          )}
-                          onClick={() => updateItem(table.id, idx, { type: item.type === 'plus' ? 'minus' : 'plus' })}
-                        >
-                          {item.type === 'plus' ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
-                        </Button>
+                      <div key={idx} className="flex flex-col gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/30 group">
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className={cn(
+                              "h-8 w-8 shrink-0", 
+                              item.type === 'plus' ? "text-emerald-500 bg-emerald-50" : "text-rose-500 bg-rose-50"
+                            )}
+                            onClick={() => updateItem(table.id, idx, { type: item.type === 'plus' ? 'minus' : 'plus' })}
+                          >
+                            {item.type === 'plus' ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                          </Button>
 
-                        <Input 
-                          placeholder="Descrição do ajuste..." 
-                          value={item.name} 
-                          onChange={(e) => updateItem(table.id, idx, { name: e.target.value })}
-                          className="flex-1 h-8 text-sm"
-                        />
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
-                          <Input 
-                            type="number" 
-                            placeholder="0,00" 
-                            value={item.value} 
-                            onChange={(e) => updateItem(table.id, idx, { value: parseFloat(e.target.value) || 0 })}
-                            className="w-24 h-8 text-right pl-6 text-sm"
-                          />
+                          <div className="flex-1 flex items-center gap-2">
+                            <Input 
+                              placeholder="Descrição..." 
+                              value={item.name} 
+                              onChange={(e) => updateItem(table.id, idx, { name: e.target.value })}
+                              className="flex-1 h-8 text-sm bg-white"
+                            />
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary shrink-0">
+                                  <Search className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-80" align="end">
+                                <DropdownMenuLabel>Escolher do Extrato</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <ScrollArea className="h-60">
+                                  {transactions.map((t) => (
+                                    <DropdownMenuItem 
+                                      key={t.id} 
+                                      onClick={() => updateItem(table.id, idx, { name: t.description, value: t.amount })}
+                                      className="flex flex-col items-start gap-1 py-2 cursor-pointer"
+                                    >
+                                      <span className="font-semibold text-xs line-clamp-1">{t.description}</span>
+                                      <div className="flex justify-between w-full text-[10px] opacity-70">
+                                        <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
+                                        <span className="font-bold">{formatCurrency(t.amount)}</span>
+                                      </div>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </ScrollArea>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          <div className="relative shrink-0">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">R$</span>
+                            <Input 
+                              type="number" 
+                              placeholder="0,00" 
+                              value={item.value} 
+                              onChange={(e) => updateItem(table.id, idx, { value: parseFloat(e.target.value) || 0 })}
+                              className="w-24 h-8 text-right pl-6 text-sm bg-white"
+                            />
+                          </div>
+
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-slate-300 hover:text-rose-500" 
+                            onClick={() => removeItem(table.id, idx)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => removeItem(table.id, idx)}>
-                          <X className="h-3 w-3" />
-                        </Button>
                       </div>
                     ))}
                   </div>
 
-                  <Button variant="ghost" size="sm" className="w-full mt-2 h-8 text-slate-400 hover:text-primary gap-1" onClick={() => addItem(table.id)}>
+                  <Button variant="ghost" size="sm" className="w-full mt-4 h-8 text-slate-400 hover:text-primary gap-1 border border-dashed border-slate-200" onClick={() => addItem(table.id)}>
                     <Plus className="h-3 w-3" /> Novo Item de Ajuste
                   </Button>
 
                   <div className="mt-6 pt-4 border-t flex items-center justify-between">
-                    <div className="text-xs text-slate-400 font-medium uppercase">Saldo Final Calculado</div>
+                    <div className="text-xs text-slate-400 font-medium uppercase tracking-tight">Saldo Final Calculado</div>
                     <div className="text-xl font-black text-slate-900">
                       {formatCurrency(finalTotal)}
                     </div>
