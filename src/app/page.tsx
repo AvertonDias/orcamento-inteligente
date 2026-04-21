@@ -1,18 +1,48 @@
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { DashboardSummary } from '@/components/DashboardSummary';
 import { TransactionTable } from '@/components/TransactionTable';
 import { CSVImporter } from '@/components/CSVImporter';
+import { TransactionDialog } from '@/components/TransactionDialog';
 import { TransactionFilters } from '@/components/TransactionFilters';
 import { FinanceChart } from '@/components/FinanceChart';
 import { AnnualSummaryView } from '@/components/AnnualSummaryView';
 import { Transaction } from '@/app/lib/types';
 import { Toaster } from '@/components/ui/toaster';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PieChart, List, LayoutDashboard, Settings, User, BarChart3, Calendar as CalendarIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/Tabs';
+import { 
+  PieChart, 
+  List, 
+  LayoutDashboard, 
+  Settings, 
+  LogOut,
+  Loader2,
+  Calendar as CalendarIcon,
+  LogIn
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { 
+  useUser, 
+  useFirestore, 
+  useAuth, 
+  useCollection 
+} from '@/firebase';
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  doc, 
+  deleteDoc, 
+  updateDoc, 
+  addDoc,
+  serverTimestamp
+} from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { useMemoFirebase } from '@/firebase/firestore/use-collection';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -20,11 +50,24 @@ const MONTHS = [
 ];
 
 export default function Home() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { user, loading: authLoading } = useUser();
+  const db = useFirestore();
+  const auth = useAuth();
+  
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
+
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return query(
+      collection(db, 'users', user.uid, 'transactions'),
+      orderBy('date', 'desc')
+    );
+  }, [db, user]);
+
+  const { data: transactions = [], loading: dataLoading } = useCollection(transactionsQuery);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
@@ -38,18 +81,80 @@ export default function Home() {
     });
   }, [transactions, selectedMonth, search, categoryFilter, typeFilter]);
 
+  const handleLogin = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider).catch(err => console.error(err));
+  };
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    signOut(auth);
+  };
+
+  const handleAdd = (data: Omit<Transaction, 'id'>) => {
+    if (!db || !user) return;
+    const colRef = collection(db, 'users', user.uid, 'transactions');
+    
+    addDoc(colRef, {
+      ...data,
+      userId: user.uid,
+      createdAt: serverTimestamp()
+    }).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: colRef.path,
+        operation: 'create',
+        requestResourceData: data,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
+  };
+
   const handleImport = (newTransactions: Transaction[]) => {
-    setTransactions((prev) => [...newTransactions, ...prev]);
+    if (!db || !user) return;
+    const colRef = collection(db, 'users', user.uid, 'transactions');
+    
+    newTransactions.forEach(t => {
+      addDoc(colRef, {
+        ...t,
+        userId: user.uid,
+        createdAt: serverTimestamp()
+      }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: colRef.path,
+          operation: 'create',
+          requestResourceData: t,
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    });
   };
 
   const handleUpdate = (id: string, updates: Partial<Transaction>) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    );
+    if (!db || !user) return;
+    const docRef = doc(db, 'users', user.uid, 'transactions', id);
+    
+    updateDoc(docRef, updates).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: updates,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const handleDelete = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    if (!db || !user) return;
+    const docRef = doc(db, 'users', user.uid, 'transactions', id);
+    
+    deleteDoc(docRef).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'delete',
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const clearFilters = () => {
@@ -59,28 +164,58 @@ export default function Home() {
     setSelectedMonth('all');
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center space-y-6">
+          <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-slate-900">Bem-vindo ao Orçamento Inteligente</h1>
+            <p className="text-slate-500">Sincronize seus dados bancários e tenha uma visão clara das suas finanças.</p>
+          </div>
+          <Button onClick={handleLogin} className="w-full h-12 text-lg gap-2">
+            <LogIn className="h-5 w-5" />
+            Entrar com Google
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/50">
-      <header className="bg-white border-b sticky top-0 z-20">
+      <header className="bg-white border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-primary p-1.5 rounded-lg">
               <LayoutDashboard className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-primary">
+            <h1 className="text-xl font-bold tracking-tight text-primary hidden sm:block">
               Orçamento Inteligente
             </h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <TransactionDialog onAdd={handleAdd} />
             <CSVImporter onImport={handleImport} />
-            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-              <User className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2 border-l pl-3 ml-1">
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-500 hover:text-rose-600 rounded-full h-8 w-8">
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Barra de Navegação de Meses (Estilo Excel Tabs) */}
       <div className="bg-slate-800 text-white overflow-x-auto no-scrollbar border-b">
         <div className="max-w-7xl mx-auto px-4 flex">
           <button
@@ -124,57 +259,57 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
               <CalendarIcon className="h-4 w-4" />
               <span>
-                {selectedMonth === 'all' ? 'Exibindo todo o período' : `Mês: ${MONTHS[selectedMonth as number]}`}
+                {selectedMonth === 'all' ? 'Todo o período' : `Mês: ${MONTHS[selectedMonth as number]}`}
               </span>
             </div>
           </div>
 
           <TabsContent value="dashboard" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-primary" />
-                  Resumo {selectedMonth === 'all' ? 'Geral' : `de ${MONTHS[selectedMonth as number]}`}
-                </h2>
+            {dataLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
               </div>
-              <DashboardSummary transactions={filteredTransactions} />
-            </section>
+            ) : (
+              <>
+                <DashboardSummary transactions={filteredTransactions} />
 
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-4">
-                <TransactionFilters 
-                  search={search}
-                  setSearch={setSearch}
-                  category={categoryFilter}
-                  setCategory={setCategoryFilter}
-                  type={typeFilter}
-                  setType={setTypeFilter}
-                  onClear={clearFilters}
-                />
-                <TransactionTable 
-                  transactions={filteredTransactions} 
-                  onUpdate={handleUpdate} 
-                  onDelete={handleDelete}
-                />
-              </div>
+                <div className="grid gap-8 lg:grid-cols-3">
+                  <div className="lg:col-span-2 space-y-4">
+                    <TransactionFilters 
+                      search={search}
+                      setSearch={setSearch}
+                      category={categoryFilter}
+                      setCategory={setCategoryFilter}
+                      type={typeFilter}
+                      setType={setTypeFilter}
+                      onClear={clearFilters}
+                    />
+                    <TransactionTable 
+                      transactions={filteredTransactions} 
+                      onUpdate={handleUpdate} 
+                      onDelete={handleDelete}
+                    />
+                  </div>
 
-              <aside className="space-y-8">
-                <section className="space-y-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-primary" />
-                    Análise por Categoria
-                  </h2>
-                  <FinanceChart transactions={filteredTransactions} />
-                </section>
+                  <aside className="space-y-8">
+                    <section className="space-y-4">
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        <PieChart className="h-4 w-4 text-primary" />
+                        Gastos por Categoria
+                      </h2>
+                      <FinanceChart transactions={filteredTransactions} />
+                    </section>
 
-                <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
-                  <h3 className="font-semibold text-primary mb-2">Dica Financeira</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Navegue pelos meses acima para comparar seu desempenho. A constância na categorização ajuda a IA a ser mais precisa.
-                  </p>
+                    <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
+                      <h3 className="font-semibold text-primary mb-2">Histórico Ativo</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Todas as transações importadas estão salvas na nuvem. Você pode acessá-las de qualquer dispositivo fazendo login com sua conta.
+                      </p>
+                    </div>
+                  </aside>
                 </div>
-              </aside>
-            </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="annual" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -187,7 +322,7 @@ export default function Home() {
       
       <footer className="bg-white border-t py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Orçamento Inteligente - Gestão Financeira Moderna
+          &copy; {new Date().getFullYear()} Orçamento Inteligente - Gestão Segura no Google Cloud
         </div>
       </footer>
     </div>

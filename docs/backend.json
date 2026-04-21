@@ -1,0 +1,29 @@
+
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Um registro de transação financeira.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["receita", "despesa"] },
+        "userId": { "type": "string" }
+      },
+      "required": ["date", "description", "amount", "category", "type", "userId"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/backend/entities/Transaction" },
+      "description": "Transações financeiras do usuário"
+    }
+  }
+}
