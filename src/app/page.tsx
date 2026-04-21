@@ -496,16 +496,6 @@ export default function Home() {
                         <p className="text-lg font-bold truncate max-w-[200px]">{user?.email}</p>
                       </div>
                     </div>
-                    <Separator />
-                    <div className="flex items-center gap-4">
-                      <div className="bg-slate-100 p-3 rounded-full">
-                        <LayoutDashboard className="h-6 w-6 text-slate-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">ID do Usuário</p>
-                        <p className="text-xs font-mono">{user?.uid}</p>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
               </div>
