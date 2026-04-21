@@ -63,6 +63,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const lines = content.split('\n');
         const newTransactions: Transaction[] = [];
 
+        // Banco do Brasil CSV usually starts with headers on line 1 (index 0)
         const startIndex = 1;
 
         for (let i = startIndex; i < lines.length; i++) {
@@ -70,6 +71,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           if (!line) continue;
 
           const parts = parseCSVLine(line);
+          // BB CSV structure: Data, Lançamento, Detalhes, Número documento, Valor
           if (parts.length < 5) continue;
 
           const rawDate = parts[0];
@@ -123,20 +125,20 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           onImport(newTransactions);
           toast({
             title: "Importação concluída",
-            description: `${newTransactions.length} transações foram processadas e salvas.`
+            description: `${newTransactions.length} transações do Banco do Brasil foram processadas.`
           });
         } else {
           toast({
             variant: "destructive",
-            title: "Arquivo vazio ou inválido",
-            description: "Não encontramos transações válidas neste arquivo CSV."
+            title: "Arquivo inválido",
+            description: "Não encontramos transações válidas no formato Banco do Brasil."
           });
         }
       } catch (err) {
         toast({
           variant: "destructive",
           title: "Erro no processamento",
-          description: "Não foi possível ler o arquivo. Verifique se é um CSV válido."
+          description: "Não foi possível ler o arquivo CSV."
         });
       } finally {
         setIsProcessing(false);
@@ -165,12 +167,12 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         {isProcessing ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="animate-pulse">Analisando...</span>
+            <span className="animate-pulse">Processando BB...</span>
           </>
         ) : (
           <>
             <Upload className="h-4 w-4" />
-            <span>Importar Extrato</span>
+            <span>Importar Extrato BB</span>
           </>
         )}
         
