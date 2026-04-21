@@ -50,6 +50,28 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
   };
 
   /**
+   * Converte uma string de valor (ex: "79,90" ou "7.990,00" ou "79.90") em número.
+   */
+  const parseAmount = (val: string) => {
+    if (!val) return 0;
+    
+    // Remove símbolos de moeda e espaços
+    let clean = val.trim().replace(/[R$\s]/g, '');
+
+    // Lógica para detectar o formato decimal
+    // Se tem vírgula, tratamos como formato brasileiro (vírgula é decimal)
+    if (clean.includes(',')) {
+      clean = clean.replace(/\./g, ''); // Remove separador de milhar (ponto)
+      clean = clean.replace(',', '.');   // Transforma vírgula em ponto decimal
+    }
+    // Se não tem vírgula mas tem ponto, assumimos que o ponto já é o decimal (padrão internacional)
+    // A menos que o ponto seja claramente um separador de milhar (ex: 1.000), mas bancos costumam usar decimais.
+    
+    const result = parseFloat(clean);
+    return isNaN(result) ? 0 : result;
+  };
+
+  /**
    * Limpa a descrição removendo padrões de data comuns em extratos (Ex: 06/03/2026)
    */
   const cleanDescription = (desc: string) => {
@@ -78,7 +100,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         const lines = content.split('\n');
         const newTransactions: Transaction[] = [];
 
-        // Skip header
+        // Pular cabeçalho
         const startIndex = 1;
 
         for (let i = startIndex; i < lines.length; i++) {
@@ -112,21 +134,13 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           }
 
           const isoDate = parseDate(rawDate);
+          const amount = parseAmount(valorOriginal);
           
-          const amountStr = valorOriginal
-            .replace(/\./g, '')
-            .replace(',', '.')
-            .replace(/[^\d.-]/g, '');
-          
-          const amount = parseFloat(amountStr);
-          
-          if (isNaN(amount) || amount === 0) {
+          if (amount === 0) {
             continue;
           }
 
           const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
-          
-          // Limpeza da descrição removendo datas e espaços extras
           const cleanedDescription = cleanDescription(fullDescription);
 
           let category = 'Outros';
@@ -136,7 +150,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             });
             category = suggestion.suggestedCategory;
           } catch (error) {
-            // Mantém categoria padrão em caso de erro na IA
+            // Mantém categoria padrão
           }
 
           newTransactions.push({
@@ -162,7 +176,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           toast({
             variant: "destructive",
             title: "Arquivo inválido",
-            description: `Não encontramos transações válidas no formato do ${activeBank === 'bb' ? 'BB' : 'Nubank'}.`
+            description: "Não encontramos transações válidas."
           });
         }
       } catch (err) {

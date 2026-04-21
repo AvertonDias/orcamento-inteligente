@@ -19,7 +19,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from '@/components/ui/input';
 import { Transaction } from '@/app/lib/types';
 import { formatCurrency, formatDate } from '@/app/lib/formatters';
 import { 
@@ -93,10 +92,9 @@ export function TransactionTable({
   return (
     <>
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        {/* Cabeçalho Simplificado */}
         <div className="bg-slate-50/80 px-4 py-2 border-b text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
           <span className="flex-1">Detalhes da Transação</span>
-          <span className="w-[100px] text-right">Valor</span>
+          <span className="w-[120px] text-right">Valor</span>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -106,7 +104,6 @@ export function TransactionTable({
               className={`p-4 hover:bg-slate-50/50 transition-colors group relative ${t.isIgnored ? 'opacity-60 grayscale-[0.5]' : ''}`}
             >
               <div className="flex gap-4 items-start">
-                {/* Ícone de Tipo */}
                 <div className="mt-1 shrink-0">
                   {t.type === 'receita' ? (
                     <ArrowUpCircle className="h-5 w-5 text-emerald-500" />
@@ -115,19 +112,22 @@ export function TransactionTable({
                   )}
                 </div>
 
-                {/* Bloco de Conteúdo Principal */}
                 <div className="flex-1 min-w-0 space-y-2">
-                  {/* Descrição em uma linha inteira para ela */}
                   <div className="w-full">
-                    <Input
+                    <textarea
                       value={t.description}
                       onChange={(e) => onUpdate(t.id, { description: e.target.value })}
-                      className="border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-base w-full overflow-visible whitespace-normal break-words"
+                      className="w-full border-none bg-transparent h-auto p-0 font-semibold text-slate-800 focus-visible:ring-0 focus-visible:bg-white px-1 -ml-1 rounded transition-all text-base overflow-hidden resize-none min-h-[1.5em]"
                       disabled={isIgnoredList}
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.currentTarget;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
                     />
                   </div>
 
-                  {/* Metadados (Data, Banco, Categoria) */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Calendar className="h-3.5 w-3.5" />
@@ -161,8 +161,7 @@ export function TransactionTable({
                   </div>
                 </div>
 
-                {/* Bloco de Valor e Ações */}
-                <div className="flex flex-col items-end justify-between self-stretch shrink-0 min-w-[120px]">
+                <div className="flex flex-col items-end justify-between self-stretch shrink-0 min-w-[130px]">
                   <div className={`font-bold text-lg tracking-tight ${t.type === 'receita' ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {t.type === 'despesa' ? '-' : '+'} {formatCurrency(t.amount)}
                   </div>
