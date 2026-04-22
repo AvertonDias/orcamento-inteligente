@@ -2,10 +2,22 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, CreditCard, Landmark } from 'lucide-react';
+import { 
+  Upload, 
+  Loader2, 
+  CreditCard, 
+  Landmark,
+  ChevronDown 
+} from 'lucide-react';
 import { Transaction, TransactionType, BankType } from '@/app/lib/types';
 import { suggestTransactionCategory } from '@/ai/flows/sugestao-categoria-transacao';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CSVImporterProps {
   onImport: (transactions: Transaction[]) => void;
@@ -50,31 +62,29 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
 
   const parseAmount = (val: string) => {
     if (!val) return 0;
-    
     let clean = val.trim().replace(/[R$\s]/g, '');
-
-    // Resolve problema de casas decimais (ex: 79,90 virando 7990)
-    // No Brasil o separador decimal é a vírgula
     if (clean.includes(',')) {
-      clean = clean.replace(/\./g, ''); // Remove separador de milhar se houver
-      clean = clean.replace(',', '.');  // Converte decimal para formato JS
+      clean = clean.replace(/\./g, '');
+      clean = clean.replace(',', '.');
     }
-    
     const result = parseFloat(clean);
     return isNaN(result) ? 0 : result;
   };
 
   const cleanDescription = (desc: string) => {
     return desc
-      .replace(/\d{2}\/\d{2}\/\d{4}/g, '') // Remove datas DD/MM/AAAA
-      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')   // Remove datas DD/MM/AA
+      .replace(/\d{2}\/\d{2}\/\d{4}/g, '')
+      .replace(/\d{2}\/\d{2}\/\d{2}/g, '')
       .replace(/\s\s+/g, ' ')
       .trim();
   };
 
   const handleButtonClick = (bank: BankType) => {
     setActiveBank(bank);
-    fileInputRef.current?.click();
+    // Pequeno delay para garantir que o estado do banco ativo seja processado
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 10);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,9 +135,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
           const isoDate = parseDate(rawDate);
           const amount = parseAmount(valorOriginal);
           
-          if (amount === 0) {
-            continue;
-          }
+          if (amount === 0) continue;
 
           const type: TransactionType = amount >= 0 ? 'receita' : 'despesa';
           const cleanedDescription = cleanDescription(fullDescription);
@@ -152,8 +160,6 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             bank: activeBank
           });
         }
-
-        newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         if (newTransactions.length > 0) {
           onImport(newTransactions);
@@ -191,35 +197,34 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
         className="hidden"
       />
       
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => handleButtonClick('bb')}
-        disabled={isProcessing}
-        className="relative overflow-hidden gap-2 min-w-[140px]"
-      >
-        {isProcessing && activeBank === 'bb' ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Landmark className="h-4 w-4 text-primary" />
-        )}
-        <span>Extrato BB</span>
-      </Button>
-
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => handleButtonClick('nubank')}
-        disabled={isProcessing}
-        className="relative overflow-hidden gap-2 min-w-[140px]"
-      >
-        {isProcessing && activeBank === 'nubank' ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <CreditCard className="h-4 w-4 text-accent" />
-        )}
-        <span>Extrato Nubank</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 min-w-[140px] border-primary/20 hover:border-primary/40"
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 text-primary" />
+            )}
+            <span>Importar Extrato</span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[180px]">
+          <DropdownMenuItem onClick={() => handleButtonClick('bb')} className="gap-2 cursor-pointer">
+            <Landmark className="h-4 w-4 text-primary" />
+            <span>Banco do Brasil</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleButtonClick('nubank')} className="gap-2 cursor-pointer">
+            <CreditCard className="h-4 w-4 text-accent" />
+            <span>Nubank</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
