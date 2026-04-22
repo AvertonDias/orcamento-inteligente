@@ -1,7 +1,4 @@
 
-// Service Worker simplificado para garantir instalabilidade PWA
-const CACHE_NAME = 'orcsmart-cache-v1';
-
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -11,9 +8,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Apenas passa as requisições adiante. 
-  // O objetivo principal aqui é cumprir os requisitos de PWA instalável.
-  event.respondWith(fetch(event.request).catch(() => {
-    return caches.match(event.request);
-  }));
+  // Estratégia de rede para garantir que os dados do Firebase sejam sempre frescos
+  // e o PWA seja detectado como válido pelo navegador.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+  }
 });

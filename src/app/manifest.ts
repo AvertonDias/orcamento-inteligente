@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Orçamento Inteligente',
-    short_name: 'OrcSmart',
+    short_name: 'Orçamento Inteligente',
     description: 'Gestão financeira moderna com IA',
     start_url: '/',
     display: 'standalone',
